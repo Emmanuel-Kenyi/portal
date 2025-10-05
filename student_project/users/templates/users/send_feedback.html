@@ -1,0 +1,333 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Feedback | Club Management System</title>
+    <link rel="stylesheet" href="{% static 'css/new_post.css' %}">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link-btn">
+            <span class="nav-icon">🚪</span> Logout
+        </button>
+    </form>
+</li>
+
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Club Management System | Send Feedback</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'student_dashboard' %}">Student</a>
+                <span class="separator">></span>
+                <span class="current">Send Feedback</span>
+            </div>
+
+            <!-- Feedback Container -->
+            <div class="post-creation-container">
+                
+                <!-- Header Section -->
+                <div class="creation-header" style="background: linear-gradient(135deg, #00c0ef 0%, #0099cc 100%);">
+                    <div class="header-icon">💬</div>
+                    <div class="header-content">
+                        <h1>Share Your Feedback</h1>
+                        <p class="club-info">
+                            <span class="author-info">Help us improve the Club Management System</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Form Section -->
+                <div class="form-container">
+                    <form method="post" id="feedbackForm">
+                        {% csrf_token %}
+                        
+                        <div class="form-section">
+                            <h3>📝 Feedback Details</h3>
+                            <p class="section-description">Tell us what you think about the system</p>
+                            
+                            <div class="form-group">
+                                <label for="category">Feedback Category *</label>
+                                <select name="category" id="category" class="form-control" required>
+                                    <option value="">-- Select Category --</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="bug">Bug Report</option>
+                                    <option value="improvement">Improvement Suggestion</option>
+                                    <option value="complaint">Complaint</option>
+                                    <option value="praise">Praise/Appreciation</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="subject">Subject *</label>
+                                <input 
+                                    type="text" 
+                                    name="subject" 
+                                    id="subject" 
+                                    class="form-control" 
+                                    placeholder="Brief summary of your feedback"
+                                    required
+                                    maxlength="200"
+                                >
+                                <small class="help-text">Maximum 200 characters</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="message">Your Feedback *</label>
+                                <textarea 
+                                    name="message" 
+                                    id="message" 
+                                    class="form-control" 
+                                    rows="10"
+                                    placeholder="Please provide detailed feedback here. Include specific examples if applicable..."
+                                    required
+                                ></textarea>
+                                <small class="help-text">Be as detailed as possible to help us understand your feedback better</small>
+                            </div>
+                        </div>
+
+                        <!-- Guidelines Section -->
+                        <div class="guidelines-section">
+                            <h3>💡 Feedback Tips</h3>
+                            <ul>
+                                <li>Be specific and provide examples when possible</li>
+                                <li>For bug reports, include steps to reproduce the issue</li>
+                                <li>For feature requests, explain how it would benefit you</li>
+                                <li>Keep your feedback constructive and respectful</li>
+                                <li>One topic per feedback submission works best</li>
+                            </ul>
+                        </div>
+
+                        <!-- Contact Information (Optional) -->
+                        <div class="form-section">
+                            <h3>📧 Follow-up (Optional)</h3>
+                            <p class="section-description">Would you like us to follow up with you?</p>
+                            
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="follow_up" id="follow_up"> 
+                                    Yes, I'd like to receive a response about this feedback
+                                </label>
+                            </div>
+
+                            <div class="form-group" id="emailGroup" style="display: none;">
+                                <label for="email">Your Email</label>
+                                <input 
+                                    type="email" 
+                                    name="email" 
+                                    id="email" 
+                                    class="form-control" 
+                                    placeholder="your.email@example.com"
+                                    value="{{ user.email }}"
+                                >
+                                <small class="help-text">We'll use this to contact you about your feedback</small>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-publish" style="background: #00c0ef;">
+                                <span class="btn-icon">📤</span>
+                                Submit Feedback
+                            </button>
+                            <a href="{% url 'student_dashboard' %}" class="btn btn-cancel">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="form-container" style="margin-top: 20px;">
+                    <div class="form-section">
+                        <h3>❓ Frequently Asked Questions</h3>
+                        
+                        <div class="faq-item">
+                            <h4>How long does it take to get a response?</h4>
+                            <p>We typically respond within 3-5 business days. Urgent issues may be addressed sooner.</p>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <h4>Is my feedback anonymous?</h4>
+                            <p>Your feedback is associated with your account, but it's kept confidential and only used to improve the system.</p>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <h4>What happens to my feedback?</h4>
+                            <p>All feedback is reviewed by our team. Feature requests and improvements are added to our development roadmap.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+
+// Show/hide email field based on follow-up checkbox
+document.getElementById('follow_up')?.addEventListener('change', function() {
+    const emailGroup = document.getElementById('emailGroup');
+    const emailInput = document.getElementById('email');
+    
+    if (this.checked) {
+        emailGroup.style.display = 'block';
+        emailInput.required = true;
+    } else {
+        emailGroup.style.display = 'none';
+        emailInput.required = false;
+    }
+});
+
+// Form validation
+document.getElementById('feedbackForm')?.addEventListener('submit', function(e) {
+    const category = document.getElementById('category').value;
+    const subject = document.getElementById('subject').value.trim();
+    const message = document.getElementById('message').value.trim();
+    
+    if (!category || !subject || !message) {
+        e.preventDefault();
+        alert('Please fill in all required fields!');
+        return false;
+    }
+    
+    if (subject.length < 5) {
+        e.preventDefault();
+        alert('Subject must be at least 5 characters long!');
+        return false;
+    }
+    
+    if (message.length < 20) {
+        e.preventDefault();
+        alert('Please provide more detailed feedback (at least 20 characters)!');
+        return false;
+    }
+});
+
+// Character counter for subject
+document.getElementById('subject')?.addEventListener('input', function() {
+    const maxLength = this.maxLength;
+    const currentLength = this.value.length;
+    const helpText = this.nextElementSibling;
+    
+    if (currentLength > maxLength - 20) {
+        helpText.textContent = (maxLength - currentLength) + ' characters remaining';
+        helpText.style.color = currentLength >= maxLength ? '#dd4b39' : '#f39c12';
+    } else {
+        helpText.textContent = 'Maximum 200 characters';
+        helpText.style.color = '#777777';
+    }
+});
+</script>
+
+<style>
+.messages-container {
+    margin-bottom: 20px;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 3px;
+    margin-bottom: 15px;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #00a65a;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dd4b39;
+}
+
+.faq-item {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #d2d6de;
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+}
+
+.faq-item h4 {
+    font-size: 16px;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.faq-item p {
+    font-size: 14px;
+    color: #777777;
+    line-height: 1.6;
+}
+</style>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Lecturer Dashboard{% endblock %}
+
+{% block content %}
+<h1>Welcome {{ user.profile.name }}</h1>
+<h2>Lecturer Dashboard</h2>
+
+<p>You can manage your teaching and club contributions here:</p>
+
+<ul>
+  <li><a href="{% url 'club_list' %}">View All Clubs</a></li>
+  <li><a href="#">Create a Poll for a Club</a></li>
+  <li><a href="#">Post Announcements to Clubs</a></li>
+  <li><a href="#">View Student Participation Reports</a></li>
+</ul>
+{% endblock %}

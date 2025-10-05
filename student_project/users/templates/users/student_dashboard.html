@@ -1,0 +1,294 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link-btn">
+            <span class="nav-icon">🚪</span> Logout
+        </button>
+    </form>
+</li>
+
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Dashboard Content -->
+    <main class="dashboard-main">
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Student Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <button class="settings-btn">⚙️</button>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <span>Student</span>
+                <span class="separator">></span>
+                <span class="current">Home</span>
+            </div>
+
+            <!-- Dashboard Stats Cards -->
+            <section class="stats-grid">
+                <div class="stat-card card-blue">
+                    <div class="stat-content">
+                        <h3>Total Clubs</h3>
+                        <p class="stat-number">{{ total_clubs }}</p>
+                    </div>
+                    <div class="stat-icon">📚</div>
+                    <a href="{% url 'club_list' %}" class="stat-link">More info →</a>
+                </div>
+
+                <div class="stat-card card-green">
+                    <div class="stat-content">
+                        <h3>Upcoming Events</h3>
+                        <p class="stat-number">{{ upcoming_events_count }}</p>
+                    </div>
+                    <div class="stat-icon">📅</div>
+                    <a href="#events" class="stat-link">More info →</a>
+                </div>
+
+                <div class="stat-card card-yellow">
+                    <div class="stat-content">
+                        <h3>Events RSVP'd</h3>
+                        <p class="stat-number">{{ rsvp_events }}</p>
+                    </div>
+                    <div class="stat-icon">✓</div>
+                    <a href="#events" class="stat-link">More info →</a>
+                </div>
+
+                <div class="stat-card card-red">
+                    <div class="stat-content">
+                        <h3>Polls Participated</h3>
+                        <p class="stat-number">{{ voted_polls }}</p>
+                    </div>
+                    <div class="stat-icon">📊</div>
+                    <a href="#polls" class="stat-link">More info →</a>
+                </div>
+            </section>
+
+            <!-- Main Content Grid -->
+            <div class="content-grid">
+                <!-- Your Clubs Section -->
+                <section class="panel clubs-panel">
+                    <div class="panel-header">
+                        <h2>Your Clubs</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                            <button class="panel-close">✕</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if user_clubs %}
+                        <div class="clubs-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Club Name</th>
+                                        <th>Members</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for club in user_clubs %}
+                                    <tr>
+                                        <td>
+                                            <div class="club-name-cell">
+                                                <span class="club-icon-small">🏛</span>
+                                                <a href="{% url 'club_detail' club.id %}" class="club-link">{{ club.name }}</a>
+                                            </div>
+                                        </td>
+                                        <td>{{ club.members.count }}</td>
+                                        <td><span class="badge badge-success">Active</span></td>
+                                        <td>
+                                            <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View</a>
+                                            <form method="post" action="{% url 'toggle_membership' club.id %}?next=student_dashboard" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">Leave</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>You haven't joined any clubs yet.</p>
+                            <a href="{% url 'club_list' %}" class="btn btn-primary">Explore Clubs</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Upcoming Events Section -->
+                <section class="panel events-panel" id="events">
+                    <div class="panel-header">
+                        <h2>Upcoming Events</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                            <button class="panel-close">✕</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if upcoming_events %}
+                        <div class="events-list-table">
+                            {% for event in upcoming_events %}
+                            <div class="event-row">
+                                <div class="event-date-badge">
+                                    <span class="event-day">{{ event.date|date:"d" }}</span>
+                                    <span class="event-month">{{ event.date|date:"M" }}</span>
+                                </div>
+                                <div class="event-details">
+                                    <h4>{{ event.title }}</h4>
+                                    <p class="event-club-name">{{ event.club.name }}</p>
+                                    <p class="event-location">📍 {{ event.location }}</p>
+                                </div>
+                                <div class="event-actions">
+                                    <span class="attendee-badge">{{ event.attendees.count }} attending</span>
+                                    <form method="post" action="{% url 'rsvp_event' event.id %}?next=student_dashboard">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn {% if user in event.attendees.all %}btn-success-active{% else %}btn-primary{% endif %}">
+                                            {% if user in event.attendees.all %}✓ Going{% else %}RSVP{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No upcoming events at the moment.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Bottom Grid -->
+            <div class="content-grid-2">
+                <!-- Recent Updates -->
+                {% if recent_posts %}
+                <section class="panel posts-panel">
+                    <div class="panel-header">
+                        <h2>Recent Updates</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                            <button class="panel-close">✕</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="posts-list">
+                            {% for post in recent_posts %}
+                            <div class="post-card">
+                                <div class="post-header-info">
+                                    <span class="post-club-badge">{{ post.club.name }}</span>
+                                    <span class="post-time">{{ post.created_at|timesince }} ago</span>
+                                </div>
+                                <h4>{{ post.title }}</h4>
+                                <p>{{ post.content|truncatewords:20 }}</p>
+                                <a href="{% url 'club_detail' post.club.id %}" class="link-primary">Read more →</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
+
+                <!-- Active Polls -->
+                {% if active_polls %}
+                <section class="panel polls-panel" id="polls">
+                    <div class="panel-header">
+                        <h2>Active Polls</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                            <button class="panel-close">✕</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="polls-grid">
+                            {% for poll in active_polls %}
+                            <div class="poll-card">
+                                <h4>{{ poll.question }}</h4>
+                                <p class="poll-club">{{ poll.club.name }}</p>
+                                <a href="{% url 'vote_poll' poll.id %}" class="btn btn-vote">Vote Now</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Simple panel toggle functionality
+document.querySelectorAll('.panel-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const panel = this.closest('.panel');
+        const body = panel.querySelector('.panel-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        this.textContent = body.style.display === 'none' ? '+' : '−';
+    });
+});
+
+document.querySelectorAll('.panel-close').forEach(btn => {
+    btn.addEventListener('click', function() {
+        this.closest('.panel').style.display = 'none';
+    });
+});
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

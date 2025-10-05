@@ -1,0 +1,250 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Activity | Club Management System</title>
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}" class="active"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link-btn">
+            <span class="nav-icon">🚪</span> Logout
+        </button>
+    </form>
+</li>
+
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Club Management System | My Activity</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <div class="breadcrumb">
+                <a href="{% url 'student_dashboard' %}">Student</a>
+                <span class="separator">></span>
+                <span class="current">My Activity</span>
+            </div>
+
+            <!-- Stats Cards -->
+            <section class="stats-grid">
+                <div class="stat-card card-blue">
+                    <div class="stat-content">
+                        <h3>Clubs Joined</h3>
+                        <p class="stat-number">{{ user_clubs.count }}</p>
+                    </div>
+                    <div class="stat-icon">🏛</div>
+                </div>
+
+                <div class="stat-card card-green">
+                    <div class="stat-content">
+                        <h3>Events RSVP'd</h3>
+                        <p class="stat-number">{{ rsvp_events.count }}</p>
+                    </div>
+                    <div class="stat-icon">📅</div>
+                </div>
+
+                <div class="stat-card card-red">
+                    <div class="stat-content">
+                        <h3>Polls Voted</h3>
+                        <p class="stat-number">{{ voted_polls|length }}</p>
+                    </div>
+                    <div class="stat-icon">📊</div>
+                </div>
+
+                <div class="stat-card card-yellow">
+                    <div class="stat-content">
+                        <h3>Posts Created</h3>
+                        <p class="stat-number">{{ user_posts.count }}</p>
+                    </div>
+                    <div class="stat-icon">📝</div>
+                </div>
+            </section>
+
+            <!-- My Clubs Section -->
+            <section class="panel clubs-panel">
+                <div class="panel-header">
+                    <h2>My Clubs ({{ user_clubs.count }})</h2>
+                </div>
+                <div class="panel-body">
+                    {% if user_clubs %}
+                    <div class="clubs-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Club Name</th>
+                                    <th>Members</th>
+                                    <th>Your Posts</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for club in user_clubs %}
+                                <tr>
+                                    <td>
+                                        <div class="club-name-cell">
+                                            <span class="club-icon-small">🏛</span>
+                                            <strong>{{ club.name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ club.members.count }}</td>
+                                    <td>{{ club.post_count }}</td>
+                                    <td>
+                                        <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>You haven't joined any clubs yet.</p>
+                        <a href="{% url 'club_list' %}" class="btn btn-primary">Explore Clubs</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- My Posts Section -->
+            <section class="panel posts-panel">
+                <div class="panel-header">
+                    <h2>My Posts ({{ user_posts.count }})</h2>
+                </div>
+                <div class="panel-body">
+                    {% if user_posts %}
+                    <div class="posts-list">
+                        {% for post in user_posts %}
+                        <div class="post-card">
+                            <div class="post-header-info">
+                                <span class="post-club-badge">{{ post.club.name }}</span>
+                                <span class="post-time">{{ post.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <h4>{{ post.title }}</h4>
+                            <p>{{ post.content|truncatewords:30 }}</p>
+                            <a href="{% url 'club_detail' post.club.id %}" class="link-primary">View Club →</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>You haven't created any posts yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- RSVP'd Events Section -->
+            <section class="panel events-panel">
+                <div class="panel-header">
+                    <h2>My RSVP'd Events ({{ rsvp_events.count }})</h2>
+                </div>
+                <div class="panel-body">
+                    {% if rsvp_events %}
+                    <div class="events-list-table">
+                        {% for event in rsvp_events %}
+                        <div class="event-row">
+                            <div class="event-date-badge">
+                                <span class="event-day">{{ event.date|date:"d" }}</span>
+                                <span class="event-month">{{ event.date|date:"M" }}</span>
+                            </div>
+                            <div class="event-details">
+                                <h4>{{ event.title }}</h4>
+                                <p class="event-club-name">{{ event.club.name }}</p>
+                                <p class="event-location">📍 {{ event.location }}</p>
+                            </div>
+                            <div class="event-actions">
+                                <span class="attendee-badge">{{ event.attendees.count }} attending</span>
+                                <a href="{% url 'club_detail' event.club.id %}" class="btn btn-primary">View Club</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>You haven't RSVP'd to any events yet.</p>
+                        <a href="{% url 'events_list' %}" class="btn btn-primary">Browse Events</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Polls Voted Section -->
+            <section class="panel polls-panel">
+                <div class="panel-header">
+                    <h2>Polls I've Voted In ({{ voted_polls|length }})</h2>
+                </div>
+                <div class="panel-body">
+                    {% if voted_polls %}
+                    <div class="polls-grid">
+                        {% for poll in voted_polls %}
+                        <div class="poll-card">
+                            <h4>{{ poll.question }}</h4>
+                            <p class="poll-club">{{ poll.club.name }}</p>
+                            <span class="badge badge-success">Voted</span>
+                            <a href="{% url 'club_detail' poll.club.id %}" class="btn btn-vote">View Results</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>You haven't participated in any polls yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<script>
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

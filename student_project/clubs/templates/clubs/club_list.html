@@ -1,0 +1,223 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Clubs | Club Management System</title>
+    <link rel="stylesheet" href="{% static 'css/club_list.css' %}">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link-btn">
+            <span class="nav-icon">🚪</span> Logout
+        </button>
+    </form>
+</li>
+
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Club Management System | All Clubs</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'student_dashboard' %}">Student</a>
+                <span class="separator">></span>
+                <span class="current">All Clubs</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>Discover Clubs</h1>
+                    <p>Browse and join clubs that match your interests</p>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-badge">
+                        <span class="stat-number">{{ clubs.count }}</span>
+                        <span class="stat-label">Total Clubs</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <section class="filter-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Search clubs by name..." onkeyup="filterClubs()">
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-btn active" onclick="filterByStatus('all')">All Clubs</button>
+                    <button class="filter-btn" onclick="filterByStatus('joined')">My Clubs</button>
+                    <button class="filter-btn" onclick="filterByStatus('available')">Available</button>
+                </div>
+            </section>
+
+            <!-- Clubs Grid -->
+            <section class="clubs-grid">
+                {% for club in clubs %}
+                <div class="club-card" data-status="{% if user in club.members.all %}joined{% else %}available{% endif %}">
+                    <div class="club-card-header">
+                        <div class="club-icon">🏛</div>
+                        {% if user in club.members.all %}
+                            <span class="member-badge">Member</span>
+                        {% endif %}
+                    </div>
+                    <div class="club-card-body">
+                        <h3 class="club-name">{{ club.name }}</h3>
+                        <p class="club-description">{{ club.description|truncatewords:20 }}</p>
+                        <div class="club-stats-row">
+                            <span class="stat-item">
+                                <strong>{{ club.members.count }}</strong> Members
+                            </span>
+                            <span class="stat-item">
+                                <strong>{{ club.posts.count }}</strong> Posts
+                            </span>
+                        </div>
+                    </div>
+                    <div class="club-card-footer">
+                        <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View Details</a>
+                        <form method="post" action="{% url 'toggle_membership' club.id %}?next=club_list" style="display:inline;">
+                            {% csrf_token %}
+                            {% if user in club.members.all %}
+                                <button type="submit" class="btn btn-leave">Leave</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-join">Join</button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="empty-icon">🏛</div>
+                    <h2>No Clubs Available</h2>
+                    <p>There are currently no clubs to display.</p>
+                </div>
+                {% endfor %}
+            </section>
+
+            <!-- No Results Message -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <div class="empty-icon">🔍</div>
+                <h2>No Clubs Found</h2>
+                <p>Try adjusting your search or filters</p>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+
+// Search functionality
+function filterClubs() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toLowerCase();
+    const cards = document.querySelectorAll('.club-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const clubName = card.querySelector('.club-name').textContent.toLowerCase();
+        const clubDesc = card.querySelector('.club-description').textContent.toLowerCase();
+        
+        if (clubName.includes(filter) || clubDesc.includes(filter)) {
+            // Check if card matches current filter status
+            const currentFilter = document.querySelector('.filter-btn.active').textContent.toLowerCase();
+            const cardStatus = card.getAttribute('data-status');
+            
+            if (currentFilter === 'all clubs' || 
+                (currentFilter === 'my clubs' && cardStatus === 'joined') ||
+                (currentFilter === 'available' && cardStatus === 'available')) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Show/hide no results message
+    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+// Filter by membership status
+function filterByStatus(status) {
+    const cards = document.querySelectorAll('.club-card');
+    const buttons = document.querySelectorAll('.filter-btn');
+    let visibleCount = 0;
+
+    // Update active button
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Filter cards
+    cards.forEach(card => {
+        const cardStatus = card.getAttribute('data-status');
+        
+        if (status === 'all' || cardStatus === status) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Show/hide no results message
+    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+    
+    // Clear search when changing filter
+    document.getElementById('searchInput').value = '';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{% block title %}Manage Clubs{% endblock %}
+{% block content %}
+<h1>Manage Clubs</h1>
+<ul>
+  {% for club in clubs %}
+    <li>{{ club.name }} - <a href="{% url 'club_detail' club.id %}">View</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

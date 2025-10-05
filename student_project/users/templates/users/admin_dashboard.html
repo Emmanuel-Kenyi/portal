@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h1>Welcome {{ user.profile.name }}</h1>
+<h2>Admin Dashboard</h2>
+
+<p>As an admin, you have full system management privileges:</p>
+
+<ul>
+  <li><a href="{% url 'manage_clubs' %}">Manage Clubs (CRUD)</a></li>
+  <li><a href="#">Manage Club Posts</a></li>
+  <li><a href="#">Manage Users</a></li>
+  <li><a href="#">View System Reports</a></li>
+</ul>
+{% endblock %}
