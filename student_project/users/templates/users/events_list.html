@@ -1,0 +1,166 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Events | Club Management System</title>
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}" class="active"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="sidebar-link-btn">
+            <span class="nav-icon">🚪</span> Logout
+        </button>
+    </form>
+</li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Club Management System | All Events</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'student_dashboard' %}">Student</a>
+                <span class="separator">></span>
+                <span class="current">Events</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>Upcoming Events</h1>
+                    <p>Browse and RSVP to events from all clubs</p>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-badge">
+                        <span class="stat-number">{{ all_events.count }}</span>
+                        <span class="stat-label">Total Events</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <section class="filter-section">
+                <div class="filter-actions">
+                    <button class="filter-btn active" onclick="filterEvents('all')">All Events ({{ all_events.count }})</button>
+                    <button class="filter-btn" onclick="filterEvents('my-clubs')">My Clubs ({{ my_clubs_events.count }})</button>
+                    <button class="filter-btn" onclick="filterEvents('rsvp')">My RSVPs ({{ rsvp_events.count }})</button>
+                </div>
+            </section>
+
+            <!-- All Events Section -->
+            <section class="panel events-panel" id="all-events">
+                <div class="panel-header">
+                    <h2>All Upcoming Events</h2>
+                </div>
+                <div class="panel-body">
+                    {% if all_events %}
+                    <div class="events-list-table">
+                        {% for event in all_events %}
+                        <div class="event-row" data-category="all {% if event.club in user.clubs.all %}my-clubs{% endif %} {% if user in event.attendees.all %}rsvp{% endif %}">
+                            <div class="event-date-badge">
+                                <span class="event-day">{{ event.date|date:"d" }}</span>
+                                <span class="event-month">{{ event.date|date:"M" }}</span>
+                            </div>
+                            <div class="event-details">
+                                <h4>{{ event.title }}</h4>
+                                <p class="event-club-name">{{ event.club.name }}</p>
+                                <p class="event-location">📍 {{ event.location }}</p>
+                                <p class="event-description">{{ event.description|truncatewords:15 }}</p>
+                            </div>
+                            <div class="event-actions">
+                                <span class="attendee-badge">{{ event.attendees.count }} attending</span>
+                                <form method="post" action="{% url 'rsvp_event' event.id %}?next=events_list" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn {% if user in event.attendees.all %}btn-success-active{% else %}btn-primary{% endif %}">
+                                        {% if user in event.attendees.all %}✓ Going{% else %}RSVP{% endif %}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">📅</div>
+                        <h2>No Upcoming Events</h2>
+                        <p>There are no scheduled events at the moment.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<script>
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+
+function filterEvents(category) {
+    const buttons = document.querySelectorAll('.filter-btn');
+    const events = document.querySelectorAll('.event-row');
+    
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    events.forEach(eventRow => {
+        const categories = eventRow.getAttribute('data-category').split(' ');
+        
+        if (category === 'all' || categories.includes(category)) {
+            eventRow.style.display = 'flex';
+        } else {
+            eventRow.style.display = 'none';
+        }
+    });
+}
+</script>
+</body>
+</html>
