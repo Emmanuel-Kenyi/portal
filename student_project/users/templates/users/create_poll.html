@@ -1,0 +1,296 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Poll | Lecturer Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">{{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'create_poll' %}" class="active"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Create Poll</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'lecturer_dashboard' %}">Dashboard</a>
+                <span class="separator">></span>
+                <span class="current">Create Poll</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>🗳️ Create New Poll</h1>
+                    <p>Engage students by creating polls for club activities and decisions</p>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="content-grid-2">
+                <!-- Poll Creation Form -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Poll Details</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form method="post" id="pollForm">
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label for="club">Select Club *</label>
+                                <select name="club" id="club" class="form-control" required>
+                                    <option value="">Choose a club...</option>
+                                    {% for club in clubs %}
+                                    <option value="{{ club.id }}">{{ club.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="question">Poll Question *</label>
+                                <input type="text" name="question" id="question" class="form-control" 
+                                       placeholder="e.g., What event should we organize next?" 
+                                       required maxlength="200">
+                                <small style="color: var(--text-muted); font-size: 12px;">Be clear and specific with your question</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description">Description (Optional)</label>
+                                <textarea name="description" id="description" class="form-control" rows="3"
+                                          placeholder="Add additional context or details about this poll..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Poll Options *</label>
+                                <div id="optionsContainer">
+                                    <div class="option-input-group">
+                                        <input type="text" name="option_1" class="form-control" placeholder="Option 1" required>
+                                        <button type="button" class="btn btn-danger" onclick="removeOption(this)" style="display: none;">✕</button>
+                                    </div>
+                                    <div class="option-input-group">
+                                        <input type="text" name="option_2" class="form-control" placeholder="Option 2" required>
+                                        <button type="button" class="btn btn-danger" onclick="removeOption(this)" style="display: none;">✕</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn" onclick="addOption()" style="margin-top: 10px;">+ Add Option</button>
+                                <small style="color: var(--text-muted); font-size: 12px; display: block; margin-top: 5px;">
+                                    Add at least 2 options (maximum 10)
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="end_date">End Date (Optional)</label>
+                                <input type="datetime-local" name="end_date" id="end_date" class="form-control">
+                                <small style="color: var(--text-muted); font-size: 12px;">Leave empty for no expiration</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="allow_multiple" id="allow_multiple">
+                                    Allow multiple selections
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="anonymous" id="anonymous">
+                                    Anonymous voting
+                                </label>
+                            </div>
+
+                            <div style="margin-top: 30px;">
+                                <button type="submit" class="btn btn-primary">Create Poll</button>
+                                <a href="{% url 'lecturer_dashboard' %}" class="btn" style="background: var(--text-muted); color: white; margin-left: 10px;">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Poll Preview & Guidelines -->
+                <div>
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Poll Preview</h2>
+                        </div>
+                        <div class="panel-body">
+                            <div class="poll-card">
+                                <h4 id="previewQuestion">Your poll question will appear here</h4>
+                                <p id="previewDescription" style="color: var(--text-muted); font-size: 13px; margin: 10px 0;"></p>
+                                <p class="poll-club" id="previewClub">Select a club to see preview</p>
+                                <div id="previewOptions" style="margin-top: 15px;">
+                                    <div style="padding: 10px; background: var(--hover-bg); border-radius: 3px; margin-bottom: 5px;">Option 1</div>
+                                    <div style="padding: 10px; background: var(--hover-bg); border-radius: 3px; margin-bottom: 5px;">Option 2</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Best Practices</h2>
+                        </div>
+                        <div class="panel-body">
+                            <ul style="line-height: 1.8; color: var(--text-dark); font-size: 14px;">
+                                <li><strong>Clear Question:</strong> Make sure your question is easy to understand</li>
+                                <li><strong>Specific Options:</strong> Provide distinct and clear choices</li>
+                                <li><strong>Appropriate Timing:</strong> Set a reasonable deadline for responses</li>
+                                <li><strong>Relevant Context:</strong> Add description if the poll needs explanation</li>
+                                <li><strong>Fair Choices:</strong> Ensure options are balanced and unbiased</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<style>
+.option-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.option-input-group input {
+    flex: 1;
+}
+
+.option-input-group .btn-danger {
+    padding: 10px 15px;
+    flex-shrink: 0;
+}
+</style>
+
+<script>
+let optionCount = 2;
+
+function addOption() {
+    if (optionCount >= 10) {
+        alert('Maximum 10 options allowed');
+        return;
+    }
+    
+    optionCount++;
+    const container = document.getElementById('optionsContainer');
+    const div = document.createElement('div');
+    div.className = 'option-input-group';
+    div.innerHTML = `
+        <input type="text" name="option_${optionCount}" class="form-control" placeholder="Option ${optionCount}" required>
+        <button type="button" class="btn btn-danger" onclick="removeOption(this)">✕</button>
+    `;
+    container.appendChild(div);
+    updatePreview();
+}
+
+function removeOption(button) {
+    if (optionCount <= 2) {
+        alert('At least 2 options required');
+        return;
+    }
+    button.parentElement.remove();
+    optionCount--;
+    updatePreview();
+}
+
+// Live preview updates
+document.getElementById('question')?.addEventListener('input', updatePreview);
+document.getElementById('description')?.addEventListener('input', updatePreview);
+document.getElementById('club')?.addEventListener('change', updatePreview);
+
+function updatePreview() {
+    const question = document.getElementById('question').value || 'Your poll question will appear here';
+    const description = document.getElementById('description').value;
+    const clubSelect = document.getElementById('club');
+    const clubText = clubSelect.options[clubSelect.selectedIndex]?.text || 'Select a club to see preview';
+    
+    document.getElementById('previewQuestion').textContent = question;
+    document.getElementById('previewDescription').textContent = description;
+    document.getElementById('previewDescription').style.display = description ? 'block' : 'none';
+    document.getElementById('previewClub').textContent = clubText;
+    
+    // Update options preview
+    const optionsInputs = document.querySelectorAll('#optionsContainer input');
+    const previewOptions = document.getElementById('previewOptions');
+    previewOptions.innerHTML = '';
+    
+    optionsInputs.forEach((input, index) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding: 10px; background: var(--hover-bg); border-radius: 3px; margin-bottom: 5px;';
+        div.textContent = input.value || `Option ${index + 1}`;
+        previewOptions.appendChild(div);
+    });
+}
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+
+// Initialize preview
+updatePreview();
+</script>
+</body>
+</html>

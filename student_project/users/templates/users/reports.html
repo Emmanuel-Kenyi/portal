@@ -1,0 +1,338 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports | Lecturer Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">{{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                <li><a href="{% url 'reports' %}" class="active"><span class="nav-icon">📊</span> Reports</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Reports & Analytics</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'lecturer_dashboard' %}">Dashboard</a>
+                <span class="separator">></span>
+                <span class="current">Reports</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>📊 Reports & Analytics</h1>
+                    <p>Track student engagement, club activities, and overall system performance</p>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Overview Stats -->
+            <section class="stats-grid">
+                <div class="stat-card card-blue">
+                    <div class="stat-content">
+                        <h3>Total Clubs</h3>
+                        <p class="stat-number">{{ total_clubs }}</p>
+                    </div>
+                    <div class="stat-icon">🏛</div>
+                    <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">Active clubs in system</p>
+                </div>
+
+                <div class="stat-card card-green">
+                    <div class="stat-content">
+                        <h3>Total Students</h3>
+                        <p class="stat-number">{{ total_students }}</p>
+                    </div>
+                    <div class="stat-icon">👥</div>
+                    <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">Registered students</p>
+                </div>
+
+                <div class="stat-card card-yellow">
+                    <div class="stat-content">
+                        <h3>Total Events</h3>
+                        <p class="stat-number">{{ total_events }}</p>
+                    </div>
+                    <div class="stat-icon">📅</div>
+                    <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">All events created</p>
+                </div>
+
+                <div class="stat-card card-purple">
+                    <div class="stat-content">
+                        <h3>Total Polls</h3>
+                        <p class="stat-number">{{ total_polls }}</p>
+                    </div>
+                    <div class="stat-icon">🗳️</div>
+                    <p style="margin-top: 10px; font-size: 14px; color: var(--text-muted);">Active and past polls</p>
+                </div>
+            </section>
+
+            <!-- Club Statistics Table -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Club Performance Statistics</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if clubs %}
+                    <div class="clubs-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Club Name</th>
+                                    <th>Members</th>
+                                    <th>Events</th>
+                                    <th>Posts</th>
+                                    <th>Polls</th>
+                                    <th>Engagement Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for club in clubs %}
+                                <tr>
+                                    <td>
+                                        <div class="club-name-cell">
+                                            <span class="club-icon-small">🏛</span>
+                                            <a href="{% url 'club_detail' club.id %}" class="club-link">{{ club.name }}</a>
+                                        </div>
+                                    </td>
+                                    <td><strong>{{ club.member_count }}</strong></td>
+                                    <td>{{ club.event_count }}</td>
+                                    <td>{{ club.post_count }}</td>
+                                    <td>{{ club.poll_count }}</td>
+                                    <td>
+                                        {% widthratio club.member_count 1 10 %}{% widthratio club.event_count 1 5 %}{% widthratio club.post_count 1 3 %}%
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View Details</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">🏛</div>
+                        <h2>No Clubs Data</h2>
+                        <p>There are no clubs to report on yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Activity Reports Grid -->
+            <div class="content-grid-2">
+                <!-- Recent Events Activity -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Recent Events Activity</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if recent_events %}
+                        <div class="events-list-table">
+                            {% for event in recent_events %}
+                            <div class="event-row" style="border-left: 4px solid var(--primary-color); padding: 15px; margin-bottom: 10px; background: var(--hover-bg); border-radius: 5px;">
+                                <div>
+                                    <h4 style="margin: 0 0 5px 0;">{{ event.title }}</h4>
+                                    <p style="margin: 5px 0; color: var(--text-muted); font-size: 13px;">
+                                        <strong>Club:</strong> {{ event.club.name }} | 
+                                        <strong>Date:</strong> {{ event.date|date:"M d, Y" }} | 
+                                        <strong>RSVPs:</strong> {{ event.attendees.count }}
+                                    </p>
+                                    <p style="margin: 5px 0; font-size: 13px;">📍 {{ event.location }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No recent events to display.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Recent Polls Activity -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Recent Polls Activity</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if recent_polls %}
+                        <div class="polls-list">
+                            {% for poll in recent_polls %}
+                            <div class="poll-card" style="border: 1px solid var(--border-color); padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+                                <h4 style="margin: 0 0 8px 0;">{{ poll.question }}</h4>
+                                <p style="margin: 5px 0; color: var(--text-muted); font-size: 13px;">
+                                    <strong>Club:</strong> {{ poll.club.name }}
+                                </p>
+                                <p style="margin: 5px 0; font-size: 13px;">
+                                    <strong>Total Votes:</strong> 
+                                    {% with total=0 %}
+                                        {% for option in poll.options.all %}
+                                            {{ total|add:option.votes.count }}
+                                        {% empty %}
+                                            0
+                                        {% endfor %}
+                                    {% endwith %}
+                                </p>
+                                <p style="margin: 5px 0; font-size: 12px; color: var(--text-muted);">
+                                    Created {{ poll.created_at|timesince }} ago
+                                </p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No recent polls to display.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Engagement Summary -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Engagement Summary</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="dashboard-cards">
+                        <div class="dashboard-card">
+                            <h3>📈 Student Participation</h3>
+                            <p style="font-size: 32px; font-weight: bold; margin: 15px 0;">
+                                {% if total_students > 0 %}
+                                    {% widthratio total_clubs total_students 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </p>
+                            <p>Average club membership rate</p>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>🎯 Event Attendance</h3>
+                            <p style="font-size: 32px; font-weight: bold; margin: 15px 0;">{{ total_rsvps }}</p>
+                            <p>Total event RSVPs across all clubs</p>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>💬 Activity Level</h3>
+                            <p style="font-size: 32px; font-weight: bold; margin: 15px 0;">
+                                {% if total_clubs > 0 %}
+                                    {% widthratio total_events total_clubs 1 %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </p>
+                            <p>Average events per club</p>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <h3>🗳️ Poll Engagement</h3>
+                            <p style="font-size: 32px; font-weight: bold; margin: 15px 0;">
+                                {% if total_clubs > 0 %}
+                                    {% widthratio total_polls total_clubs 1 %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </p>
+                            <p>Average polls per club</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Panel toggle functionality
+document.querySelectorAll('.panel-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const panel = this.closest('.panel');
+        const body = panel.querySelector('.panel-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        this.textContent = body.style.display === 'none' ? '+' : '−';
+    });
+});
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

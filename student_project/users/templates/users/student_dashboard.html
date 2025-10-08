@@ -88,7 +88,7 @@
                         <p class="stat-number">{{ upcoming_events_count }}</p>
                     </div>
                     <div class="stat-icon">📅</div>
-                    <a href="#events" class="stat-link">More info →</a>
+                    <a href="{% url 'events_list' %}" class="stat-link">More info →</a>
                 </div>
 
                 <div class="stat-card card-yellow">
@@ -97,7 +97,7 @@
                         <p class="stat-number">{{ rsvp_events }}</p>
                     </div>
                     <div class="stat-icon">✓</div>
-                    <a href="#events" class="stat-link">More info →</a>
+                    <a href="{% url 'events_list' %}" class="stat-link">More info →</a>
                 </div>
 
                 <div class="stat-card card-red">

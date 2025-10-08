@@ -1,12 +1,15 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ club.name }} | Club Management System</title>
-    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
+    {% if user.profile.role == 'student' %}
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+    {% else %}
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+    {% endif %}
     <link rel="stylesheet" href="{% static 'css/club_detail.css' %}">
 </head>
 <body>
@@ -28,25 +31,34 @@
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
             {% endif %}
             <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+            <p class="sidebar-role">{{ user.profile.role|title }}</p>
         </div>
 
         <nav class="sidebar-nav">
             <ul>
-                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                {% if user.profile.role == 'student' %}
+                    <!-- Student Navigation -->
+                    <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                    <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                {% elif user.profile.role == 'lecturer' %}
+                    <!-- Lecturer Navigation -->
+                    <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                    <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                    <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+                {% endif %}
                 <li>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="sidebar-link-btn">
-            <span class="nav-icon">🚪</span> Logout
-        </button>
-    </form>
-</li>
-
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
             </ul>
         </nav>
     </aside>
@@ -60,14 +72,22 @@
                 <h1 class="page-title">Club Management System | {{ club.name }}</h1>
             </div>
             <div class="header-right">
+                {% if user.profile.role == 'student' %}
                 <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                {% else %}
+                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                {% endif %}
             </div>
         </header>
 
         <div class="dashboard-content">
             <!-- Breadcrumb -->
             <div class="breadcrumb">
-                <a href="{% url 'student_dashboard' %}">Student</a>
+                {% if user.profile.role == 'student' %}
+                    <a href="{% url 'student_dashboard' %}">Student</a>
+                {% else %}
+                    <a href="{% url 'lecturer_dashboard' %}">Lecturer</a>
+                {% endif %}
                 <span class="separator">></span>
                 <a href="{% url 'club_list' %}">Clubs</a>
                 <span class="separator">></span>
@@ -94,6 +114,7 @@
                         </div>
                     </div>
                 </div>
+                {% if user.profile.role == 'student' %}
                 <div class="club-actions">
                     <form method="post" action="{% url 'toggle_membership' club.id %}">
                         {% csrf_token %}
@@ -104,6 +125,7 @@
                         {% endif %}
                     </form>
                 </div>
+                {% endif %}
             </section>
 
             <!-- Main Content Grid -->
@@ -114,7 +136,7 @@
                     <div class="panel-header">
                         <h2>📢 Announcements</h2>
                         <div class="panel-actions">
-                            {% if user in club.members.all %}
+                            {% if user.profile.role == 'student' and user in club.members.all %}
                                 <a href="{% url 'new_post' club.id %}" class="btn btn-add">+ Add Post</a>
                             {% endif %}
                         </div>
@@ -140,7 +162,7 @@
                         {% else %}
                             <div class="empty-state">
                                 <p>No announcements yet.</p>
-                                {% if user in club.members.all %}
+                                {% if user.profile.role == 'student' and user in club.members.all %}
                                     <a href="{% url 'new_post' club.id %}" class="btn btn-primary">Create First Post</a>
                                 {% endif %}
                             </div>
@@ -159,6 +181,7 @@
                                 {% for poll in polls %}
                                 <div class="poll-item">
                                     <h3>{{ poll.question }}</h3>
+                                    {% if user.profile.role == 'student' %}
                                     <form method="post" action="{% url 'vote_poll' poll.id %}" class="poll-form">
                                         {% csrf_token %}
                                         <div class="poll-options">
@@ -172,6 +195,17 @@
                                         </div>
                                         <button type="submit" class="btn btn-vote">Cast Vote</button>
                                     </form>
+                                    {% else %}
+                                    <!-- Lecturer view: Show results only -->
+                                    <div class="poll-options">
+                                        {% for option in poll.options.all %}
+                                        <div class="poll-option">
+                                            <span class="option-text">{{ option.text }}</span>
+                                            <span class="option-votes">({{ option.vote_count }} votes)</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% endfor %}
                             </div>
@@ -198,7 +232,9 @@
                                             <th>Event Name</th>
                                             <th>Location</th>
                                             <th>Attendees</th>
+                                            {% if user.profile.role == 'student' %}
                                             <th>Action</th>
+                                            {% endif %}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -216,6 +252,7 @@
                                             </td>
                                             <td>{{ event.location }}</td>
                                             <td>{{ event.attendees.count }}</td>
+                                            {% if user.profile.role == 'student' %}
                                             <td>
                                                 {% if user in event.attendees.all %}
                                                     <span class="badge badge-going">✓ Going</span>
@@ -230,6 +267,7 @@
                                                     </form>
                                                 {% endif %}
                                             </td>
+                                            {% endif %}
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -238,6 +276,38 @@
                         {% else %}
                             <div class="empty-state">
                                 <p>No upcoming events scheduled.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Members Section -->
+                <section class="panel members-panel">
+                    <div class="panel-header">
+                        <h2>👥 Club Members</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if club.members.all %}
+                            <div class="members-grid">
+                                {% for member in club.members.all %}
+                                <div class="member-card">
+                                    {% if member.profile.avatar %}
+                                    <img src="{{ member.profile.avatar.url }}" alt="{{ member.profile.name }}" class="member-avatar">
+                                    {% else %}
+                                    <div class="member-avatar-placeholder">
+                                        {{ member.profile.name|first|upper }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="member-info">
+                                        <strong>{{ member.profile.name }}</strong>
+                                        <small>{{ member.email }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No members yet.</p>
                             </div>
                         {% endif %}
                     </div>

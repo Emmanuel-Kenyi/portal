@@ -1,12 +1,15 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Clubs | Club Management System</title>
-    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
+    {% if user.profile.role == 'student' %}
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+    {% else %}
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+    {% endif %}
     <link rel="stylesheet" href="{% static 'css/club_list.css' %}">
 </head>
 <body>
@@ -28,25 +31,34 @@
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
             {% endif %}
             <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
+            <p class="sidebar-role">{{ user.profile.role|title }}</p>
         </div>
 
         <nav class="sidebar-nav">
             <ul>
-                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                {% if user.profile.role == 'student' %}
+                    <!-- Student Navigation -->
+                    <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                    <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                {% elif user.profile.role == 'lecturer' %}
+                    <!-- Lecturer Navigation -->
+                    <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                    <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                    <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+                {% endif %}
                 <li>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="sidebar-link-btn">
-            <span class="nav-icon">🚪</span> Logout
-        </button>
-    </form>
-</li>
-
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
             </ul>
         </nav>
     </aside>
@@ -60,14 +72,22 @@
                 <h1 class="page-title">Club Management System | All Clubs</h1>
             </div>
             <div class="header-right">
+                {% if user.profile.role == 'student' %}
                 <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                {% else %}
+                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                {% endif %}
             </div>
         </header>
 
         <div class="dashboard-content">
             <!-- Breadcrumb -->
             <div class="breadcrumb">
-                <a href="{% url 'student_dashboard' %}">Student</a>
+                {% if user.profile.role == 'student' %}
+                    <a href="{% url 'student_dashboard' %}">Student</a>
+                {% else %}
+                    <a href="{% url 'lecturer_dashboard' %}">Lecturer</a>
+                {% endif %}
                 <span class="separator">></span>
                 <span class="current">All Clubs</span>
             </div>
@@ -75,14 +95,20 @@
             <!-- Page Header -->
             <div class="page-header">
                 <div class="header-content">
-                    <h1>Discover Clubs</h1>
-                    <p>Browse and join clubs that match your interests</p>
+                    <h1>{% if user.profile.role == 'student' %}Discover Clubs{% else %}All Clubs{% endif %}</h1>
+                    <p>{% if user.profile.role == 'student' %}Browse and join clubs that match your interests{% else %}View and manage all student clubs{% endif %}</p>
                 </div>
                 <div class="header-stats">
                     <div class="stat-badge">
                         <span class="stat-number">{{ clubs.count }}</span>
                         <span class="stat-label">Total Clubs</span>
                     </div>
+                    {% if user.profile.role == 'student' %}
+                    <div class="stat-badge">
+                        <span class="stat-number">{{ user_clubs_count|default:0 }}</span>
+                        <span class="stat-label">Joined</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -91,11 +117,13 @@
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="🔍 Search clubs by name..." onkeyup="filterClubs()">
                 </div>
+                {% if user.profile.role == 'student' %}
                 <div class="filter-actions">
                     <button class="filter-btn active" onclick="filterByStatus('all')">All Clubs</button>
                     <button class="filter-btn" onclick="filterByStatus('joined')">My Clubs</button>
                     <button class="filter-btn" onclick="filterByStatus('available')">Available</button>
                 </div>
+                {% endif %}
             </section>
 
             <!-- Clubs Grid -->
@@ -104,7 +132,7 @@
                 <div class="club-card" data-status="{% if user in club.members.all %}joined{% else %}available{% endif %}">
                     <div class="club-card-header">
                         <div class="club-icon">🏛</div>
-                        {% if user in club.members.all %}
+                        {% if user.profile.role == 'student' and user in club.members.all %}
                             <span class="member-badge">Member</span>
                         {% endif %}
                     </div>
@@ -122,6 +150,7 @@
                     </div>
                     <div class="club-card-footer">
                         <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View Details</a>
+                        {% if user.profile.role == 'student' %}
                         <form method="post" action="{% url 'toggle_membership' club.id %}?next=club_list" style="display:inline;">
                             {% csrf_token %}
                             {% if user in club.members.all %}
@@ -130,6 +159,7 @@
                                 <button type="submit" class="btn btn-join">Join</button>
                             {% endif %}
                         </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}
@@ -171,16 +201,23 @@ function filterClubs() {
         
         if (clubName.includes(filter) || clubDesc.includes(filter)) {
             // Check if card matches current filter status
-            const currentFilter = document.querySelector('.filter-btn.active').textContent.toLowerCase();
-            const cardStatus = card.getAttribute('data-status');
-            
-            if (currentFilter === 'all clubs' || 
-                (currentFilter === 'my clubs' && cardStatus === 'joined') ||
-                (currentFilter === 'available' && cardStatus === 'available')) {
+            const activeBtn = document.querySelector('.filter-btn.active');
+            if (activeBtn) {
+                const currentFilter = activeBtn.textContent.toLowerCase();
+                const cardStatus = card.getAttribute('data-status');
+                
+                if (currentFilter === 'all clubs' || 
+                    (currentFilter === 'my clubs' && cardStatus === 'joined') ||
+                    (currentFilter === 'available' && cardStatus === 'available')) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            } else {
+                // No filter buttons (lecturer view)
                 card.style.display = 'block';
                 visibleCount++;
-            } else {
-                card.style.display = 'none';
             }
         } else {
             card.style.display = 'none';

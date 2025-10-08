@@ -12,4 +12,7 @@ urlpatterns = [
     path("my-activity/", views.my_activity, name="my_activity"),
     path("events/", views.events_list, name="events_list"),
     path("feedback/", views.send_feedback, name="send_feedback"),
+    path('create-poll/', views.create_poll, name='create_poll'),
+    path('announcements/', views.announcements, name='announcements'),
+    path('reports/', views.reports, name='reports'),
 ]
