@@ -6,8 +6,8 @@ from django.contrib.auth.views import LogoutView
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Q
-from .models import Profile
 from clubs.models import Club, Event, Poll, ClubPost, PollOption
+from .models import Profile, StudentPoints
 
 
 # -------------------------
@@ -353,3 +353,74 @@ class CustomLogoutView(LogoutView):
     def get(self, request, *args, **kwargs):
         """Allow logout via GET requests"""
         return self.post(request, *args, **kwargs)
+
+@login_required
+def award_points(request, club_id):
+    """Lecturer awards points to students for club participation"""
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
+        messages.error(request, 'Only lecturers can award points.')
+        return redirect('dashboard')
+    
+    club = get_object_or_404(Club, id=club_id)
+    
+    if request.method == 'POST':
+        student_id = request.POST.get('student')
+        points = request.POST.get('points')
+        reason = request.POST.get('reason')
+        
+        if student_id and points and reason:
+            from django.contrib.auth.models import User
+            student = get_object_or_404(User, id=student_id)
+            
+            StudentPoints.objects.create(
+                student=student,
+                club=club,
+                points=int(points),
+                reason=reason,
+                awarded_by=request.user
+            )
+            
+            messages.success(request, f'Successfully awarded {points} points to {student.username}!')
+            return redirect('award_points', club_id=club_id)
+    
+    # Get club members for the dropdown
+    members = club.members.all()
+    
+    # Get recent awards for this club
+    recent_awards = StudentPoints.objects.filter(club=club).order_by('-awarded_at')[:10]
+    
+    context = {
+        'club': club,
+        'members': members,
+        'recent_awards': recent_awards,
+    }
+    
+    return render(request, 'users/award_points.html', context)
+
+
+@login_required
+def student_points_summary(request):
+    """View student's total points and history"""
+    user = request.user
+    
+    # Get all points received by the student
+    points_history = StudentPoints.objects.filter(student=user).order_by('-awarded_at')
+    
+    # Calculate total points
+    total_points = sum(p.points for p in points_history)
+    
+    # Group by club
+    from django.db.models import Sum
+    points_by_club = StudentPoints.objects.filter(student=user).values(
+        'club__name'
+    ).annotate(
+        total=Sum('points')
+    ).order_by('-total')
+    
+    context = {
+        'points_history': points_history,
+        'total_points': total_points,
+        'points_by_club': points_by_club,
+    }
+    
+    return render(request, 'users/student_points.html', context)

@@ -77,6 +77,9 @@
                 {% else %}
                 <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
                 {% endif %}
+                {% if user.profile.role == 'lecturer' %}
+                <a href="{% url 'award_points' club.id %}" class="btn btn-success">🏆 Award Points to Students</a>
+                {% endif %}
             </div>
         </header>
 

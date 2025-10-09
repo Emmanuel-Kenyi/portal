@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Points | Student Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">Student</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'student_points' %}" class="active"><span class="nav-icon">🏆</span> My Points</a></li>
+                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Dashboard Content -->
+    <main class="dashboard-main">
+        <!-- Top Header Bar -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">My Points</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'student_dashboard' %}">Dashboard</a>
+                <span class="separator">></span>
+                <span class="current">My Points</span>
+            </div>
+
+            <!-- Page Header with Total Points -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>🏆 My Participation Points</h1>
+                    <p>Track your club activity points and achievements</p>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <span class="stat-number" style="font-size: 48px; color: white;">{{ total_points }}</span>
+                        <span class="stat-label" style="color: white;">Total Points</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Points by Club -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Points by Club</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if points_by_club %}
+                    <div class="stats-grid">
+                        {% for club_points in points_by_club %}
+                        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="stat-content">
+                                <h3 style="color: white;">{{ club_points.club__name }}</h3>
+                                <p class="stat-number" style="color: white;">{{ club_points.total }}</p>
+                            </div>
+                            <div class="stat-icon">🏛</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">🏆</div>
+                        <h2>No Points Yet</h2>
+                        <p>Start participating in club activities to earn points!</p>
+                        <a href="{% url 'club_list' %}" class="btn btn-primary">Explore Clubs</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Points History -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Points History ({{ points_history.count }} awards)</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if points_history %}
+                    <div class="clubs-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Club</th>
+                                    <th>Points</th>
+                                    <th>Reason</th>
+                                    <th>Awarded By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for point in points_history %}
+                                <tr>
+                                    <td>
+                                        {{ point.awarded_at|date:"M d, Y" }}<br>
+                                        <small style="color: var(--text-muted);">{{ point.awarded_at|time:"g:i A" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="club-name-cell">
+                                            <span class="club-icon-small">🏛</span>
+                                            <a href="{% url 'club_detail' point.club.id %}" class="club-link">
+                                                {{ point.club.name }}
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success" style="font-size: 16px; padding: 8px 12px;">
+                                            +{{ point.points }}
+                                        </span>
+                                    </td>
+                                    <td><strong>{{ point.reason }}</strong></td>
+                                    <td>
+                                        {{ point.awarded_by.profile.name }}<br>
+                                        <small style="color: var(--text-muted);">{{ point.awarded_by.username }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <h2>No Points History</h2>
+                        <p>You haven't received any points yet. Keep participating in club activities!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Achievement Levels -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Achievement Levels</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="dashboard-cards">
+                        <div class="dashboard-card {% if total_points >= 50 %}card-achieved{% endif %}">
+                            <h3>🥉 Bronze Member</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">50 points</p>
+                            <p>{% if total_points >= 50 %}✅ Achieved!{% else %}{{ 50|add:total_points|add:"-"|add:total_points }} more points needed{% endif %}</p>
+                        </div>
+
+                        <div class="dashboard-card {% if total_points >= 100 %}card-achieved{% endif %}">
+                            <h3>🥈 Silver Member</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">100 points</p>
+                            <p>{% if total_points >= 100 %}✅ Achieved!{% else %}{{ 100|add:"-"|add:total_points }} more points needed{% endif %}</p>
+                        </div>
+
+                        <div class="dashboard-card {% if total_points >= 200 %}card-achieved{% endif %}">
+                            <h3>🥇 Gold Member</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">200 points</p>
+                            <p>{% if total_points >= 200 %}✅ Achieved!{% else %}{{ 200|add:"-"|add:total_points }} more points needed{% endif %}</p>
+                        </div>
+
+                        <div class="dashboard-card {% if total_points >= 500 %}card-achieved{% endif %}">
+                            <h3>💎 Diamond Member</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">500 points</p>
+                            <p>{% if total_points >= 500 %}✅ Achieved!{% else %}{{ 500|add:"-"|add:total_points }} more points needed{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How to Earn Points -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>How to Earn Points</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div style="line-height: 2; padding: 10px;">
+                        <p style="margin: 10px 0;">✅ <strong>Attend Events:</strong> Show up and participate in club events</p>
+                        <p style="margin: 10px 0;">✅ <strong>Be Active:</strong> Engage in discussions and activities</p>
+                        <p style="margin: 10px 0;">✅ <strong>Take Leadership:</strong> Volunteer for organizing roles</p>
+                        <p style="margin: 10px 0;">✅ <strong>Contribute Ideas:</strong> Share creative suggestions</p>
+                        <p style="margin: 10px 0;">✅ <strong>Help Others:</strong> Support fellow club members</p>
+                        <p style="margin: 10px 0;">✅ <strong>Organize Events:</strong> Plan and execute club activities</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<style>
+.card-achieved {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.card-achieved h3,
+.card-achieved p {
+    color: white;
+}
+</style>
+
+<script>
+// Panel toggle functionality
+document.querySelectorAll('.panel-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const panel = this.closest('.panel');
+        const body = panel.querySelector('.panel-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        this.textContent = body.style.display === 'none' ? '+' : '−';
+    });
+});
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

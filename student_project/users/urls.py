@@ -15,4 +15,6 @@ urlpatterns = [
     path('create-poll/', views.create_poll, name='create_poll'),
     path('announcements/', views.announcements, name='announcements'),
     path('reports/', views.reports, name='reports'),
+    path('award-points/<int:club_id>/', views.award_points, name='award_points'),
+    path('my-points/', views.student_points_summary, name='student_points'),
 ]
