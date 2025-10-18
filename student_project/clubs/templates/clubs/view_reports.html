@@ -1,29 +1,31 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports | Lecturer Dashboard</title>
     <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}">
 </head>
+
 <body>
-<div class="dashboard-wrapper">
+    <div class="dashboard-wrapper">
 
-    {% include 'lecturer_sidebar.html' %}
+        {% include 'lecturer_sidebar.html' %}
 
-    <main class="dashboard-main">
-        <header class="top-header">
-            <h1 class="page-title">📊 Club Reports</h1>
-        </header>
+        <main class="dashboard-main">
+            <header class="top-header">
+                <h1 class="page-title">📊 Club Reports</h1>
+            </header>
 
-        <div class="dashboard-content">
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>Student Engagement & Club Participation</h2>
-                </div>
-                <div class="panel-body">
-                    {% if reports %}
+            <div class="dashboard-content">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Student Engagement & Club Participation</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if reports %}
                         <table class="clubs-table">
                             <thead>
                                 <tr>
@@ -35,22 +37,23 @@
                             </thead>
                             <tbody>
                                 {% for report in reports %}
-                                    <tr>
-                                        <td>{{ report.club.name }}</td>
-                                        <td>{{ report.club.members.count }}</td>
-                                        <td>{{ report.posts_count }}</td>
-                                        <td>{{ report.polls_count }}</td>
-                                    </tr>
+                                <tr>
+                                    <td>{{ report.club.name }}</td>
+                                    <td>{{ report.club.members.count }}</td>
+                                    <td>{{ report.posts_count }}</td>
+                                    <td>{{ report.polls_count }}</td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                    {% else %}
+                        {% else %}
                         <p>No reports available yet.</p>
-                    {% endif %}
-                </div>
-            </section>
-        </div>
-    </main>
-</div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
 </body>
+
 </html>

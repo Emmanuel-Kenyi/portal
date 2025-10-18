@@ -1,0 +1,275 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User | Admin Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role" style="color: #e74c3c;">{{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                <li><a href="{% url 'manage_clubs' %}"><span class="nav-icon">🏛</span> Manage Clubs</a></li>
+                <li><a href="{% url 'manage_users' %}" class="active"><span class="nav-icon">👥</span> Manage Users</a></li>
+                <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
+                <li><a href="#"><span class="nav-icon">📊</span> System Reports</a></li>
+                <li><a href="#"><span class="nav-icon">⚙️</span> Settings</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Edit User</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'manage_users' %}" class="btn-back">← Back to Users</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+                <span class="separator">></span>
+                <a href="{% url 'manage_users' %}">Manage Users</a>
+                <span class="separator">></span>
+                <span class="current">Edit User</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>✏️ Edit User</h1>
+                    <p>Update user information and permissions</p>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="content-grid-2">
+                <!-- Edit Form -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>User Information</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" class="form-control" value="{{ user_to_edit.username }}" disabled>
+                                <small style="color: var(--text-muted); font-size: 12px;">Username cannot be changed</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="name">Full Name *</label>
+                                <input type="text" name="name" id="name" class="form-control" 
+                                       value="{{ user_to_edit.profile.name }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role">Role *</label>
+                                <select name="role" id="role" class="form-control" required>
+                                    <option value="student" {% if user_to_edit.profile.role == 'student' %}selected{% endif %}>Student</option>
+                                    <option value="lecturer" {% if user_to_edit.profile.role == 'lecturer' %}selected{% endif %}>Lecturer</option>
+                                    <option value="admin" {% if user_to_edit.profile.role == 'admin' %}selected{% endif %}>Admin</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" class="form-control" value="{{ user_to_edit.email|default:'Not set' }}" disabled>
+                                <small style="color: var(--text-muted); font-size: 12px;">Email management coming soon</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" name="is_active" id="is_active" 
+                                           {% if user_to_edit.is_active %}checked{% endif %}>
+                                    Active Account
+                                </label>
+                                <small style="display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px;">
+                                    Unchecking this will prevent the user from logging in
+                                </small>
+                            </div>
+
+                            <div style="margin-top: 30px;">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                <a href="{% url 'manage_users' %}" class="btn" 
+                                   style="background: var(--text-muted); color: white; margin-left: 10px;">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- User Details -->
+                <div>
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>User Details</h2>
+                        </div>
+                        <div class="panel-body">
+                            <div style="padding: 10px;">
+                                <p style="margin: 15px 0;">
+                                    <strong>User ID:</strong><br>
+                                    <span style="color: var(--text-muted);">{{ user_to_edit.id }}</span>
+                                </p>
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Username:</strong><br>
+                                    <span style="color: var(--text-muted);">{{ user_to_edit.username }}</span>
+                                </p>
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Current Role:</strong><br>
+                                    {% if user_to_edit.profile.role == 'student' %}
+                                        <span class="badge badge-success">Student</span>
+                                    {% elif user_to_edit.profile.role == 'lecturer' %}
+                                        <span class="badge" style="background: #f39c12;">Lecturer</span>
+                                    {% elif user_to_edit.profile.role == 'admin' %}
+                                        <span class="badge" style="background: #e74c3c;">Admin</span>
+                                    {% endif %}
+                                </p>
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Account Status:</strong><br>
+                                    {% if user_to_edit.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge" style="background: #95a5a6;">Inactive</span>
+                                    {% endif %}
+                                </p>
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Date Joined:</strong><br>
+                                    <span style="color: var(--text-muted);">{{ user_to_edit.date_joined|date:"F d, Y" }}</span>
+                                </p>
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Last Login:</strong><br>
+                                    <span style="color: var(--text-muted);">
+                                        {% if user_to_edit.last_login %}
+                                            {{ user_to_edit.last_login|date:"F d, Y, g:i A" }}
+                                        {% else %}
+                                            Never logged in
+                                        {% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Activity Summary</h2>
+                        </div>
+                        <div class="panel-body">
+                            <div style="padding: 10px;">
+                                {% if user_to_edit.profile.role == 'student' %}
+                                    <p style="margin: 15px 0;">
+                                        <strong>Clubs Joined:</strong><br>
+                                        <span style="font-size: 24px; font-weight: bold; color: #3498db;">
+                                            {{ user_to_edit.clubs.count }}
+                                        </span>
+                                    </p>
+                                    
+                                    <p style="margin: 15px 0;">
+                                        <strong>Total Points:</strong><br>
+                                        <span style="font-size: 24px; font-weight: bold; color: #2ecc71;">
+                                            {{ user_to_edit.points_received.aggregate.total|default:0 }}
+                                        </span>
+                                    </p>
+                                {% endif %}
+                                
+                                <p style="margin: 15px 0;">
+                                    <strong>Posts Created:</strong><br>
+                                    <span style="font-size: 24px; font-weight: bold; color: #f39c12;">
+                                        {{ user_to_edit.clubpost_set.count }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Danger Zone</h2>
+                        </div>
+                        <div class="panel-body">
+                            <div style="padding: 15px; background: #fee; border-left: 4px solid #e74c3c;">
+                                <h4 style="margin: 0 0 10px 0; color: #e74c3c;">Delete User</h4>
+                                <p style="margin: 10px 0; font-size: 14px;">
+                                    Once deleted, this user and all their data will be permanently removed. 
+                                    This action cannot be undone.
+                                </p>
+                                {% if user_to_edit.id != user.id %}
+                                <a href="{% url 'delete_user' user_to_edit.id %}" 
+                                   class="btn btn-danger"
+                                   onclick="return confirm('Are you sure you want to delete {{ user_to_edit.username }}? This action cannot be undone!')">
+                                    Delete User
+                                </a>
+                                {% else %}
+                                <p style="color: #e74c3c; font-style: italic;">You cannot delete your own account</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

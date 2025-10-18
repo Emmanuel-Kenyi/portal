@@ -34,6 +34,7 @@
                 <li><a href="{% url 'lecturer_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Dashboard</a></li>
                 <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
                 <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                <li><a href="{% url 'lecturer_add_mark' %}"><span class="nav-icon">📝</span> Add Student Marks</a></li>
                 <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
                 <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
                 <li>
@@ -136,6 +137,12 @@
                 </div>
                 <div class="panel-body">
                     <div class="dashboard-cards">
+                        <div class="dashboard-card">
+                            <h3>📝 Add Student Marks</h3>
+                            <p>Enter or update marks for students and calculate GPA.</p>
+                            <a href="{% url 'lecturer_add_mark' %}" class="btn btn-primary">Add Marks</a>
+                        </div>
+
                         <div class="dashboard-card">
                             <h3>🏫 View Clubs</h3>
                             <p>See all student clubs, their members, and activities.</p>

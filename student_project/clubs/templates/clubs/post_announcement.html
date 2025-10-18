@@ -1,126 +1,131 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post Announcement | Lecturer Dashboard</title>
     <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
 </head>
+
 <body>
-<div class="dashboard-wrapper">
+    <div class="dashboard-wrapper">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-section">
-                <span class="logo-icon">🎓</span>
-                <span class="logo-text">CLUB MS</span>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
             </div>
-        </div>
 
-        <div class="user-profile">
-            {% if user.profile.avatar %}
+            <div class="user-profile">
+                {% if user.profile.avatar %}
                 <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
-            {% else %}
+                {% else %}
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
-            {% endif %}
-            <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">{{ user.profile.role|title }}</p>
-        </div>
-
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
-                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
-                <li><a href="{% url 'announcements' %}" class="active"><span class="nav-icon">📢</span> Announcements</a></li>
-                <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
-                <li>
-                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="sidebar-link-btn">
-                            <span class="nav-icon">🚪</span> Logout
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </nav>
-    </aside>
-
-    <main class="dashboard-main">
-        <header class="top-header">
-            <div class="header-left">
-                <button class="menu-toggle">☰</button>
-                <h1 class="page-title">Post Announcement</h1>
-            </div>
-            <div class="header-right">
-                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
-            </div>
-        </header>
-
-        <div class="dashboard-content">
-            <!-- Breadcrumb -->
-            <div class="breadcrumb">
-                <a href="{% url 'lecturer_dashboard' %}">Dashboard</a>
-                <span class="separator">></span>
-                <span class="current">Post Announcement</span>
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role">{{ user.profile.role|title }}</p>
             </div>
 
-            <!-- Page Header -->
-            <div class="page-header">
-                <div class="header-content">
-                    <h1>📢 Post New Announcement</h1>
-                    <p>Share important updates and information with club members</p>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                    <li><a href="{% url 'lecturer_add_mark' %}" class="active"><span class="nav-icon">📝</span> Add
+                            Student Marks</a></li>
+                    <li><a href="{% url 'announcements' %}" class="active"><span class="nav-icon">📢</span>
+                            Announcements</a></li>
+                    <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle">☰</button>
+                    <h1 class="page-title">Post Announcement</h1>
                 </div>
+                <div class="header-right">
+                    <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <a href="{% url 'lecturer_dashboard' %}">Dashboard</a>
+                    <span class="separator">></span>
+                    <span class="current">Post Announcement</span>
+                </div>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="header-content">
+                        <h1>📢 Post New Announcement</h1>
+                        <p>Share important updates and information with club members</p>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                {% if messages %}
+                <div style="margin-bottom: 20px;">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Announcement Details</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="title">Title *</label>
+                                <input type="text" name="title" id="title" class="form-control"
+                                    placeholder="e.g., Important Club Meeting Tomorrow" required maxlength="200">
+                            </div>
+                            <div class="form-group">
+                                <label for="content">Content *</label>
+                                <textarea name="content" id="content" rows="6" class="form-control"
+                                    placeholder="Write your announcement here..." required></textarea>
+                            </div>
+                            <div style="margin-top: 30px;">
+                                <button type="submit" class="btn btn-primary">Post Announcement</button>
+                                <a href="{% url 'lecturer_dashboard' %}" class="btn"
+                                    style="background: var(--text-muted); color: white; margin-left: 10px;">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </section>
             </div>
+        </main>
+    </div>
 
-            <!-- Messages -->
-            {% if messages %}
-            <div style="margin-bottom: 20px;">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <section class="panel">
-                <div class="panel-header">
-                    <h2>Announcement Details</h2>
-                </div>
-                <div class="panel-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="title">Title *</label>
-                            <input type="text" name="title" id="title" class="form-control" 
-                                   placeholder="e.g., Important Club Meeting Tomorrow" 
-                                   required maxlength="200">
-                        </div>
-                        <div class="form-group">
-                            <label for="content">Content *</label>
-                            <textarea name="content" id="content" rows="6" class="form-control" 
-                                      placeholder="Write your announcement here..." 
-                                      required></textarea>
-                        </div>
-                        <div style="margin-top: 30px;">
-                            <button type="submit" class="btn btn-primary">Post Announcement</button>
-                            <a href="{% url 'lecturer_dashboard' %}" class="btn" style="background: var(--text-muted); color: white; margin-left: 10px;">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </section>
-        </div>
-    </main>
-</div>
-
-<script>
-// Menu toggle for mobile
-document.querySelector('.menu-toggle')?.addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.toggle('sidebar-open');
-});
-</script>
+    <script>
+        // Menu toggle for mobile
+        document.querySelector('.menu-toggle')?.addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('sidebar-open');
+        });
+    </script>
 </body>
+
 </html>

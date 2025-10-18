@@ -1,9 +1,426 @@
-{% block title %}Manage Clubs{% endblock %}
-{% block content %}
-<h1>Manage Clubs</h1>
-<ul>
-  {% for club in clubs %}
-    <li>{{ club.name }} - <a href="{% url 'club_detail' club.id %}">View</a></li>
-  {% endfor %}
-</ul>
-{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Clubs | Admin Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+
+<body>
+
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
+            </div>
+
+            <div class="user-profile">
+                {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+                {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role" style="color: #e74c3c;">{{ user.profile.role|title }}</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'manage_clubs' %}" class="active"><span class="nav-icon">🏛</span> Manage
+                            Clubs</a></li>
+                    <li><a href="{% url 'manage_users' %}"><span class="nav-icon">👥</span> Manage Users</a></li>
+                    <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
+                    <li><a href="#"><span class="nav-icon">📊</span> System Reports</a></li>
+                    <li><a href="#"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle">☰</button>
+                    <h1 class="page-title">Manage Clubs</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Club</button>
+                    <a href="{% url 'admin_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+                    <span class="separator">></span>
+                    <span class="current">Manage Clubs</span>
+                </div>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="header-content">
+                        <h1>🏛 Club Management</h1>
+                        <p>View, create, edit, and manage all clubs in the system</p>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                {% if messages %}
+                <div style="margin-bottom: 20px;">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Club Statistics -->
+                <section class="stats-grid">
+                    <div class="stat-card card-blue">
+                        <div class="stat-content">
+                            <h3>Total Clubs</h3>
+                            <p class="stat-number">{{ clubs.count }}</p>
+                        </div>
+                        <div class="stat-icon">🏛</div>
+                    </div>
+                    <div class="stat-card card-green">
+                        <div class="stat-content">
+                            <h3>Total Members</h3>
+                            <p class="stat-number">{{ total_members }}</p>
+                        </div>
+                        <div class="stat-icon">👥</div>
+                    </div>
+                    <div class="stat-card card-yellow">
+                        <div class="stat-content">
+                            <h3>Total Events</h3>
+                            <p class="stat-number">{{ total_events }}</p>
+                        </div>
+                        <div class="stat-icon">📅</div>
+                    </div>
+                    <div class="stat-card card-purple">
+                        <div class="stat-content">
+                            <h3>Total Posts</h3>
+                            <p class="stat-number">{{ total_posts }}</p>
+                        </div>
+                        <div class="stat-icon">📝</div>
+                    </div>
+                </section>
+
+                <!-- Clubs Table -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>All Clubs ({{ clubs.count }})</h2>
+                        <div class="panel-actions">
+                            <input type="text" id="searchInput" placeholder="🔍 Search clubs..." class="search-input">
+                            <button class="panel-toggle">−</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-body">
+                        {% if clubs %}
+                        <div class="clubs-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Club Name</th>
+                                        <th>Description</th>
+                                        <th>Members</th>
+                                        <th>Events</th>
+                                        <th>Posts</th>
+                                        <th>Polls</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clubsTableBody">
+                                    {% for club in clubs %}
+                                    <tr class="club-row">
+                                        <td><strong>#{{ club.id }}</strong></td>
+                                        <td>
+                                            <div class="club-name-cell">
+                                                <span class="club-icon-small">🏛</span>
+                                                <strong>{{ club.name }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>{{ club.description|truncatewords:10 }}</td>
+                                        <td><strong>{{ club.members.count }}</strong></td>
+                                        <td>{{ club.events.count }}</td>
+                                        <td>{{ club.posts.count }}</td>
+                                        <td>{{ club.polls.count }}</td>
+                                        <td>
+                                            <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View</a>
+                                            <button class="btn btn-primary" data-id="{{ club.id }}"
+                                                data-name="{{ club.name|escapejs }}"
+                                                data-description="{{ club.description|escapejs }}"
+                                                data-category="{{ club.category|default:''|escapejs }}"
+                                                onclick="handleEdit(this)">
+                                                Edit
+                                            </button>
+
+                                            <button class="btn btn-danger" data-id="{{ club.id }}"
+                                                data-name="{{ club.name|escapejs }}" onclick="handleDelete(this)">
+                                                Delete
+                                            </button>
+
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">🏛</div>
+                            <h2>No Clubs Yet</h2>
+                            <p>Create the first club to get started.</p>
+                            <button class="btn btn-primary" onclick="openCreateModal()">Create Club</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Club Activity Overview -->
+                <div class="content-grid-2">
+                    <!-- Most Popular Clubs -->
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Most Popular Clubs</h2>
+                            <div class="panel-actions"><button class="panel-toggle">−</button></div>
+                        </div>
+                        <div class="panel-body">
+                            {% if popular_clubs %}
+                            {% for club in popular_clubs %}
+                            <div class="club-activity-item">
+                                <div>
+                                    <strong>{{ club.name }}</strong><br>
+                                    <small>{{ club.member_count }} members</small>
+                                </div>
+                                <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View</a>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="no-data">No data available</p>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    <!-- Most Active Clubs -->
+                    <section class="panel">
+                        <div class="panel-header">
+                            <h2>Most Active Clubs</h2>
+                            <div class="panel-actions"><button class="panel-toggle">−</button></div>
+                        </div>
+                        <div class="panel-body">
+                            {% if active_clubs %}
+                            {% for club in active_clubs %}
+                            <div class="club-activity-item">
+                                <div>
+                                    <strong>{{ club.name }}</strong><br>
+                                    <small>{{ club.post_count }} posts</small>
+                                </div>
+                                <a href="{% url 'club_detail' club.id %}" class="btn btn-view">View</a>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="no-data">No data available</p>
+                            {% endif %}
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Engagement Summary -->
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Engagement Summary</h2>
+                        <div class="panel-actions"><button class="panel-toggle">−</button></div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="dashboard-cards">
+                            <div class="dashboard-card">
+                                <h3>Average Members per Club</h3>
+                                <p class="stat-number">
+                                    {% if clubs.count > 0 %}
+                                    {% widthratio total_members clubs.count 1 %}
+                                    {% else %}
+                                    0
+                                    {% endif %}
+                                </p>
+                                <p>Club membership average</p>
+                            </div>
+                            <div class="dashboard-card">
+                                <h3>Total Club Activity</h3>
+                                <p class="stat-number">{{ total_activity }}</p>
+                                <p>Combined posts, events & polls</p>
+                            </div>
+                            <div class="dashboard-card">
+                                <h3>Engagement Rate</h3>
+                                <p class="stat-number">
+                                    {% if clubs.count > 0 %}
+                                    {% widthratio total_activity clubs.count 1 %}
+                                    {% else %}
+                                    0
+                                    {% endif %}
+                                </p>
+                                <p>Average activities per club</p>
+                            </div>
+                            <div class="dashboard-card">
+                                <h3>Active Clubs</h3>
+                                <p class="stat-number">{{ active_club_count }}</p>
+                                <p>Clubs with recent activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Club Modal -->
+    <div id="clubModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modalTitle">Create New Club</h2>
+            <form id="clubForm" method="post" action="{% url 'manage_clubs' %}">
+                {% csrf_token %}
+                <input type="hidden" id="clubId" name="club_id">
+                <input type="hidden" id="actionType" name="action">
+
+                <div class="form-group">
+                    <label for="clubName">Club Name *</label>
+                    <input type="text" id="clubName" name="name" class="form-control" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label for="clubDescription">Description *</label>
+                    <textarea id="clubDescription" name="description" class="form-control" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="clubCategory">Category (Optional)</label>
+                    <select id="clubCategory" name="category" class="form-control">
+                        <option value="">Select category...</option>
+                        <option value="Academic">Academic</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Culture">Culture</option>
+                        <option value="Community Service">Community Service</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Create Club</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content small">
+            <h2 style="color:#e74c3c;">⚠️ Confirm Delete</h2>
+            <p>Are you sure you want to delete <strong id="deleteClubName"></strong>?</p>
+            <p class="small-text">This action cannot be undone.</p>
+
+            <form id="deleteForm" method="post" action="{% url 'manage_clubs' %}">
+                {% csrf_token %}
+                <input type="hidden" id="deleteClubId" name="club_id">
+                <input type="hidden" name="action" value="delete">
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Club</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Panel toggle
+        document.querySelectorAll('.panel-toggle').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const panel = this.closest('.panel');
+                const body = panel.querySelector('.panel-body');
+                body.style.display = body.style.display === 'none' ? 'block' : 'none';
+                this.textContent = body.style.display === 'none' ? '+' : '−';
+            });
+        });
+
+        // Menu toggle
+        document.querySelector('.menu-toggle')?.addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('sidebar-open');
+        });
+
+        // Search functionality
+        document.getElementById('searchInput')?.addEventListener('keyup', function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.club-row');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Modals
+        function openCreateModal() {
+            document.getElementById('modalTitle').textContent = 'Create New Club';
+            document.getElementById('clubForm').reset();
+            document.getElementById('clubId').value = '';
+            document.getElementById('actionType').value = 'create';
+            document.getElementById('submitBtn').textContent = 'Create Club';
+            document.getElementById('clubModal').style.display = 'flex';
+        }
+
+        function openEditModal(id, name, description, category) {
+            document.getElementById('modalTitle').textContent = 'Edit Club';
+            document.getElementById('clubId').value = id;
+            document.getElementById('clubName').value = name;
+            document.getElementById('clubDescription').value = description;
+            document.getElementById('clubCategory').value = category || '';
+            document.getElementById('actionType').value = 'edit';
+            document.getElementById('submitBtn').textContent = 'Save Changes';
+            document.getElementById('clubModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('clubModal').style.display = 'none';
+        }
+
+        function confirmDelete(id, name) {
+            document.getElementById('deleteClubId').value = id;
+            document.getElementById('deleteClubName').textContent = name;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // Close modals on outside click
+        document.getElementById('clubModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
+        document.getElementById('deleteModal')?.addEventListener('click', function (e) {
+            if (e.target === this) closeDeleteModal();
+        });
+    </script>
+
+</body>
+
+</html>

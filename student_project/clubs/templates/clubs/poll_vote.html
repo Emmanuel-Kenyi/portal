@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,185 +10,189 @@
     <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/poll_vote.css' %}">
 </head>
+
 <body>
-<div class="dashboard-wrapper">
+    <div class="dashboard-wrapper">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-section">
-                <span class="logo-icon">🎓</span>
-                <span class="logo-text">CLUB MS</span>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
             </div>
-        </div>
 
-        <div class="user-profile">
-            {% if user.profile.avatar %}
+            <div class="user-profile">
+                {% if user.profile.avatar %}
                 <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
-            {% else %}
+                {% else %}
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
-            {% endif %}
-            <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
-        </div>
-
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
-                <li>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="sidebar-link-btn">
-            <span class="nav-icon">🚪</span> Logout
-        </button>
-    </form>
-</li>
-
-            </ul>
-        </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="dashboard-main">
-        <!-- Top Header Bar -->
-        <header class="top-header">
-            <div class="header-left">
-                <button class="menu-toggle">☰</button>
-                <h1 class="page-title">Club Management System | Cast Your Vote</h1>
-            </div>
-            <div class="header-right">
-                <a href="{% url 'club_detail' poll.club.id %}" class="btn-back">← Back to Club</a>
-            </div>
-        </header>
-
-        <div class="dashboard-content">
-            <!-- Breadcrumb -->
-            <div class="breadcrumb">
-                <a href="{% url 'student_dashboard' %}">Student</a>
-                <span class="separator">></span>
-                <a href="{% url 'club_list' %}">Clubs</a>
-                <span class="separator">></span>
-                <a href="{% url 'club_detail' poll.club.id %}">{{ poll.club.name }}</a>
-                <span class="separator">></span>
-                <span class="current">Vote</span>
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
             </div>
 
-            <!-- Poll Voting Section -->
-            <section class="poll-container">
-                <div class="poll-header">
-                    <div class="poll-icon">📊</div>
-                    <div class="poll-info">
-                        <span class="club-badge">{{ poll.club.name }}</span>
-                        <h1 class="poll-question">{{ poll.question }}</h1>
-                        <p class="poll-meta">
-                            <span class="meta-item">🗳️ Active Poll</span>
-                            <span class="meta-item">📅 Posted {{ poll.created_at|date:"M d, Y" }}</span>
-                        </p>
-                    </div>
-                </div>
-
-                <div class="poll-body">
-                    <div class="voting-instructions">
-                        <h3>📋 Voting Instructions</h3>
-                        <ul>
-                            <li>Select one option from the choices below</li>
-                            <li>Click the "Cast Vote" button to submit your response</li>
-                            <li>You can only vote once per poll</li>
-                        </ul>
-                    </div>
-
-                    <form method="post" class="vote-form" id="voteForm">
-                        {% csrf_token %}
-                        <div class="options-container">
-                            {% for option in poll.options.all %}
-                            <label class="option-card" for="option{{ option.id }}">
-                                <input type="radio" name="option" value="{{ option.id }}" id="option{{ option.id }}" required>
-                                <div class="option-content">
-                                    <span class="option-letter">{{ forloop.counter|upper }}</span>
-                                    <div class="option-details">
-                                        <span class="option-text">{{ option.text }}</span>
-                                        <span class="option-stats">
-                                            {% if option.vote_count > 0 %}
-                                                {{ option.vote_count }} vote{{ option.vote_count|pluralize }}
-                                            {% else %}
-                                                No votes yet
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    <span class="check-icon">✓</span>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-submit">
-                                <span class="btn-icon">🗳️</span>
-                                Cast Your Vote
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                    <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                    <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send
+                            Feedback</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
                             </button>
-                            <a href="{% url 'club_detail' poll.club.id %}" class="btn btn-cancel">Cancel</a>
-                        </div>
-                    </form>
+                        </form>
+                    </li>
+
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Top Header Bar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle">☰</button>
+                    <h1 class="page-title">Club Management System | Cast Your Vote</h1>
+                </div>
+                <div class="header-right">
+                    <a href="{% url 'club_detail' poll.club.id %}" class="btn-back">← Back to Club</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <a href="{% url 'student_dashboard' %}">Student</a>
+                    <span class="separator">></span>
+                    <a href="{% url 'club_list' %}">Clubs</a>
+                    <span class="separator">></span>
+                    <a href="{% url 'club_detail' poll.club.id %}">{{ poll.club.name }}</a>
+                    <span class="separator">></span>
+                    <span class="current">Vote</span>
                 </div>
 
-                <!-- Poll Statistics -->
-                <div class="poll-stats-section">
-                    <h3>📈 Current Statistics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <span class="stat-number">{{ poll.options.all.count }}</span>
-                            <span class="stat-label">Options</span>
+                <!-- Poll Voting Section -->
+                <section class="poll-container">
+                    <div class="poll-header">
+                        <div class="poll-icon">📊</div>
+                        <div class="poll-info">
+                            <span class="club-badge">{{ poll.club.name }}</span>
+                            <h1 class="poll-question">{{ poll.question }}</h1>
+                            <p class="poll-meta">
+                                <span class="meta-item">🗳️ Active Poll</span>
+                                <span class="meta-item">📅 Posted {{ poll.created_at|date:"M d, Y" }}</span>
+                            </p>
                         </div>
-                        <div class="stat-box">
-                            <span class="stat-number">
-                                {% widthratio poll.options.all.0.vote_count 1 1 as total %}
+                    </div>
+
+                    <div class="poll-body">
+                        <div class="voting-instructions">
+                            <h3>📋 Voting Instructions</h3>
+                            <ul>
+                                <li>Select one option from the choices below</li>
+                                <li>Click the "Cast Vote" button to submit your response</li>
+                                <li>You can only vote once per poll</li>
+                            </ul>
+                        </div>
+
+                        <form method="post" class="vote-form" id="voteForm">
+                            {% csrf_token %}
+                            <div class="options-container">
                                 {% for option in poll.options.all %}
+                                <label class="option-card" for="option{{ option.id }}">
+                                    <input type="radio" name="option" value="{{ option.id }}" id="option{{ option.id }}"
+                                        required>
+                                    <div class="option-content">
+                                        <span class="option-letter">{{ forloop.counter|upper }}</span>
+                                        <div class="option-details">
+                                            <span class="option-text">{{ option.text }}</span>
+                                            <span class="option-stats">
+                                                {% if option.vote_count > 0 %}
+                                                {{ option.vote_count }} vote{{ option.vote_count|pluralize }}
+                                                {% else %}
+                                                No votes yet
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        <span class="check-icon">✓</span>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-submit">
+                                    <span class="btn-icon">🗳️</span>
+                                    Cast Your Vote
+                                </button>
+                                <a href="{% url 'club_detail' poll.club.id %}" class="btn btn-cancel">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Poll Statistics -->
+                    <div class="poll-stats-section">
+                        <h3>📈 Current Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-number">{{ poll.options.all.count }}</span>
+                                <span class="stat-label">Options</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-number">
+                                    {% widthratio poll.options.all.0.vote_count 1 1 as total %}
+                                    {% for option in poll.options.all %}
                                     {% widthratio option.vote_count 1 1 as vote %}
                                     {% widthratio vote total 1 as sum %}
-                                {% endfor %}
-                                {{ poll.total_votes|default:"0" }}
-                            </span>
-                            <span class="stat-label">Total Votes</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-number">{{ poll.club.members.count }}</span>
-                            <span class="stat-label">Members</span>
+                                    {% endfor %}
+                                    {{ poll.total_votes|default:"0" }}
+                                </span>
+                                <span class="stat-label">Total Votes</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-number">{{ poll.club.members.count }}</span>
+                                <span class="stat-label">Members</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-        </div>
-    </main>
-</div>
+            </div>
+        </main>
+    </div>
 
-<script>
-// Menu toggle for mobile
-document.querySelector('.menu-toggle')?.addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.toggle('sidebar-open');
-});
+    <script>
+        // Menu toggle for mobile
+        document.querySelector('.menu-toggle')?.addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('sidebar-open');
+        });
 
-// Form validation and visual feedback
-document.getElementById('voteForm')?.addEventListener('submit', function(e) {
-    const selected = document.querySelector('input[name="option"]:checked');
-    if (!selected) {
-        e.preventDefault();
-        alert('Please select an option before voting!');
-        return false;
-    }
-});
+        // Form validation and visual feedback
+        document.getElementById('voteForm')?.addEventListener('submit', function (e) {
+            const selected = document.querySelector('input[name="option"]:checked');
+            if (!selected) {
+                e.preventDefault();
+                alert('Please select an option before voting!');
+                return false;
+            }
+        });
 
-// Add click effect to option cards
-document.querySelectorAll('.option-card').forEach(card => {
-    card.addEventListener('click', function() {
-        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-        this.classList.add('selected');
-    });
-});
-</script>
+        // Add click effect to option cards
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', function () {
+                document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    </script>
 </body>
+
 </html>

@@ -1,0 +1,313 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users | Admin Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role" style="color: #e74c3c;">{{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                <li><a href="{% url 'manage_clubs' %}"><span class="nav-icon">🏛</span> Manage Clubs</a></li>
+                <li><a href="{% url 'manage_users' %}" class="active"><span class="nav-icon">👥</span> Manage Users</a></li>
+                <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
+                <li><a href="#"><span class="nav-icon">📊</span> System Reports</a></li>
+                <li><a href="#"><span class="nav-icon">⚙️</span> Settings</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Manage Users</h1>
+            </div>
+            <div class="header-right">
+                <a href="{% url 'admin_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'admin_dashboard' %}">Dashboard</a>
+                <span class="separator">></span>
+                <span class="current">Manage Users</span>
+            </div>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-content">
+                    <h1>👥 User Management</h1>
+                    <p>View, edit, and manage all system users</p>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- User Statistics -->
+            <section class="stats-grid">
+                <div class="stat-card card-blue">
+                    <div class="stat-content">
+                        <h3>Total Users</h3>
+                        <p class="stat-number">{{ total_users }}</p>
+                    </div>
+                    <div class="stat-icon">👥</div>
+                </div>
+
+                <div class="stat-card card-green">
+                    <div class="stat-content">
+                        <h3>Students</h3>
+                        <p class="stat-number">{{ total_students }}</p>
+                    </div>
+                    <div class="stat-icon">🎓</div>
+                </div>
+
+                <div class="stat-card card-yellow">
+                    <div class="stat-content">
+                        <h3>Lecturers</h3>
+                        <p class="stat-number">{{ total_lecturers }}</p>
+                    </div>
+                    <div class="stat-icon">👨‍🏫</div>
+                </div>
+
+                <div class="stat-card card-purple">
+                    <div class="stat-content">
+                        <h3>Admins</h3>
+                        <p class="stat-number">{{ total_admins }}</p>
+                    </div>
+                    <div class="stat-icon">⚙️</div>
+                </div>
+            </section>
+
+            <!-- Filter and Search -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Filter Users</h2>
+                </div>
+                <div class="panel-body">
+                    <form method="get" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search by username or name..." 
+                                   value="{{ search_query }}">
+                        </div>
+                        <div style="min-width: 150px;">
+                            <select name="role" class="form-control">
+                                <option value="">All Roles</option>
+                                <option value="student" {% if role_filter == 'student' %}selected{% endif %}>Students</option>
+                                <option value="lecturer" {% if role_filter == 'lecturer' %}selected{% endif %}>Lecturers</option>
+                                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins</option>
+                            </select>
+                        </div>
+                        <div style="min-width: 150px;">
+                            <select name="status" class="form-control">
+                                <option value="">All Status</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="{% url 'manage_users' %}" class="btn">Clear</a>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Users Table -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>All Users ({{ users.count }})</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if users %}
+                    <div class="clubs-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Role</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_obj in users %}
+                                <tr>
+                                    <td><strong>#{{ user_obj.id }}</strong></td>
+                                    <td>
+                                        <strong>{{ user_obj.username }}</strong>
+                                    </td>
+                                    <td>{{ user_obj.profile.name }}</td>
+                                    <td>
+                                        {% if user_obj.profile.role == 'student' %}
+                                            <span class="badge badge-success">Student</span>
+                                        {% elif user_obj.profile.role == 'lecturer' %}
+                                            <span class="badge" style="background: #f39c12;">Lecturer</span>
+                                        {% elif user_obj.profile.role == 'admin' %}
+                                            <span class="badge" style="background: #e74c3c;">Admin</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user_obj.email|default:"Not set" }}</td>
+                                    <td>
+                                        {% if user_obj.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge" style="background: #95a5a6;">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user_obj.date_joined|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'edit_user' user_obj.id %}" class="btn btn-view">Edit</a>
+                                        {% if user_obj.id != user.id %}
+                                        <a href="{% url 'delete_user' user_obj.id %}" 
+                                           class="btn btn-danger"
+                                           onclick="return confirm('Are you sure you want to delete this user?')">Delete</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <h2>No Users Found</h2>
+                        <p>No users match your search criteria.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- User Activity Summary -->
+            <div class="content-grid-2">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Recent Registrations</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if recent_users %}
+                        <div style="padding: 10px;">
+                            {% for recent_user in recent_users %}
+                            <div style="padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>{{ recent_user.username }}</strong><br>
+                                    <small style="color: var(--text-muted);">
+                                        {{ recent_user.profile.name }} - {{ recent_user.profile.role|title }}
+                                    </small>
+                                </div>
+                                <small style="color: var(--text-muted);">
+                                    {{ recent_user.date_joined|timesince }} ago
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="padding: 20px; text-align: center; color: var(--text-muted);">No recent registrations</p>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Active Users (Last 7 Days)</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="dashboard-cards">
+                            <div class="dashboard-card" style="text-align: center;">
+                                <h3>Active This Week</h3>
+                                <p style="font-size: 48px; font-weight: bold; margin: 20px 0; color: #2ecc71;">
+                                    {{ active_this_week }}
+                                </p>
+                                <p>Users logged in recently</p>
+                            </div>
+
+                            <div class="dashboard-card" style="text-align: center;">
+                                <h3>Total Logins</h3>
+                                <p style="font-size: 48px; font-weight: bold; margin: 20px 0; color: #3498db;">
+                                    {{ total_logins|default:"N/A" }}
+                                </p>
+                                <p>Combined login sessions</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+// Panel toggle functionality
+document.querySelectorAll('.panel-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const panel = this.closest('.panel');
+        const body = panel.querySelector('.panel-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        this.textContent = body.style.display === 'none' ? '+' : '−';
+    });
+});
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>

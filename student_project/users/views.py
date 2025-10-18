@@ -5,19 +5,18 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.views import LogoutView
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
+from django.contrib.auth.models import User
+from datetime import timedelta
 from clubs.models import Club, Event, Poll, ClubPost, PollOption
-from .models import Profile, StudentPoints
+from .models import Profile, StudentPoints, Course, StudentMark, StudentGPA
+from .utils import calculate_gpa, get_grade_point as get_grade_and_point
 
 
 # -------------------------
 # Custom Login View
 # -------------------------
 def login_view(request):
-    """
-    Handle user login with AuthenticationForm.
-    Redirects to role-based dashboard after login.
-    """
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -33,9 +32,6 @@ def login_view(request):
 # -------------------------
 @login_required
 def dashboard_redirect(request):
-    """
-    Redirect user to their dashboard based on role.
-    """
     profile = getattr(request.user, "profile", None)
     if not profile:
         profile = Profile.objects.create(
@@ -51,47 +47,29 @@ def dashboard_redirect(request):
         return redirect("admin_dashboard")
     return redirect("login")
 
-
 @login_required
 def student_dashboard(request):
-    """Student-specific dashboard with stats"""
     user = request.user
-    
-    # Get user's clubs
     user_clubs = user.clubs.all()
-    
-    # Get upcoming events from user's clubs
     upcoming_events = Event.objects.filter(
-        club__in=user_clubs,
-        date__gte=timezone.now()
+        club__in=user_clubs, date__gte=timezone.now()
     ).order_by('date')[:5]
-    
-    # Get recent posts from user's clubs
-    recent_posts = ClubPost.objects.filter(
-        club__in=user_clubs
-    ).order_by('-created_at')[:5]
-    
-    # Get active polls from user's clubs
-    active_polls = Poll.objects.filter(
-        club__in=user_clubs
-    ).order_by('-created_at')[:3]
-    
-    # Calculate stats
+    recent_posts = ClubPost.objects.filter(club__in=user_clubs).order_by('-created_at')[:5]
+    active_polls = Poll.objects.filter(club__in=user_clubs).order_by('-created_at')[:3]
     total_clubs = user_clubs.count()
     upcoming_events_count = upcoming_events.count()
+    rsvp_events = Event.objects.filter(attendees=user, date__gte=timezone.now()).count()
+    voted_polls = sum(
+        1 for poll in Poll.objects.filter(club__in=user_clubs)
+        if poll.options.filter(votes=user).exists()
+    )
     
-    # Count events user has RSVP'd to
-    rsvp_events = Event.objects.filter(
-        attendees=user,
-        date__gte=timezone.now()
-    ).count()
-    
-    # Count polls user has voted in
-    voted_polls = 0
-    for poll in Poll.objects.filter(club__in=user_clubs):
-        if poll.options.filter(votes=user).exists():
-            voted_polls += 1
-    
+    # Fetch student's marks and GPA record
+    student_courses = StudentMark.objects.filter(student=user).select_related('course')
+    gpa_record = StudentGPA.objects.filter(student=user).last()
+    gpa = gpa_record.gpa if gpa_record else 0.0
+    cgpa = gpa_record.cgpa if gpa_record else 0.0
+
     context = {
         'user_clubs': user_clubs,
         'upcoming_events': upcoming_events,
@@ -101,34 +79,24 @@ def student_dashboard(request):
         'upcoming_events_count': upcoming_events_count,
         'rsvp_events': rsvp_events,
         'voted_polls': voted_polls,
+        'student_courses': student_courses,
+        'gpa': gpa,
+        'cgpa': cgpa,
     }
-    
     return render(request, "users/student_dashboard.html", context)
 
 
 @login_required
 def lecturer_dashboard(request):
-    """Lecturer-specific dashboard with stats and data"""
-    from django.contrib.auth.models import User
-    
-    # Get all clubs
     clubs = Club.objects.all()
     total_clubs = clubs.count()
-    
-    # Get total students (users with student role)
     total_students = Profile.objects.filter(role='student').count()
-    
-    # Get active polls
     active_polls = Poll.objects.all()
     active_polls_count = active_polls.count()
-    
-    # Get upcoming events
     upcoming_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')
     upcoming_events_count = upcoming_events.count()
-    
-    # Get recent posts
     recent_posts = ClubPost.objects.all().order_by('-created_at')
-    
+
     context = {
         'clubs': clubs,
         'total_clubs': total_clubs,
@@ -139,37 +107,113 @@ def lecturer_dashboard(request):
         'upcoming_events_count': upcoming_events_count,
         'recent_posts': recent_posts,
     }
-    
     return render(request, "users/lecturer_dashboard.html", context)
 
 
 @login_required
 def admin_dashboard(request):
-    """Admin-specific dashboard"""
-    return render(request, "users/admin_dashboard.html")
+    total_users = User.objects.count()
+    total_students = Profile.objects.filter(role='student').count()
+    total_lecturers = Profile.objects.filter(role='lecturer').count()
+    total_admins = Profile.objects.filter(role='admin').count()
+    total_clubs = Club.objects.count()
+    total_events = Event.objects.count()
+    total_posts = ClubPost.objects.count()
+    clubs = Club.objects.all()
+    recent_posts = ClubPost.objects.all().order_by('-created_at')
+    active_sessions = User.objects.filter(is_active=True).count()
+
+    context = {
+        'total_users': total_users,
+        'total_students': total_students,
+        'total_lecturers': total_lecturers,
+        'total_admins': total_admins,
+        'total_clubs': total_clubs,
+        'total_events': total_events,
+        'total_posts': total_posts,
+        'clubs': clubs,
+        'recent_posts': recent_posts,
+        'active_sessions': active_sessions,
+    }
+    return render(request, "users/admin_dashboard.html", context)
 
 
 # -------------------------
-# NEW NAVIGATION VIEWS
+# Manage Posts (Admin/Lecturer)
 # -------------------------
+@login_required
+def manage_posts(request):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() not in ['admin', 'lecturer']:
+        messages.error(request, "You do not have permission to manage posts.")
+        return redirect('dashboard')
+
+    search_query = request.GET.get('search', '')
+    club_filter = request.GET.get('club', '')
+    author_filter = request.GET.get('author', '')
+
+    posts = ClubPost.objects.all().order_by('-created_at')
+
+    if search_query:
+        posts = posts.filter(Q(title__icontains=search_query) | Q(content__icontains=search_query))
+    if club_filter:
+        posts = posts.filter(club__id=club_filter)
+    if author_filter:
+        posts = posts.filter(author__id=author_filter)
+
+    total_posts = ClubPost.objects.count()
+    today_posts = ClubPost.objects.filter(created_at__date=timezone.now().date()).count()
+    week_posts = ClubPost.objects.filter(
+        created_at__gte=timezone.now() - timedelta(days=7)
+    ).count()
+    total_clubs = Club.objects.count()
+
+    active_clubs = Club.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:5]
+    active_authors = User.objects.annotate(post_count=Count('clubpost')).order_by('-post_count')[:5]
+
+    clubs = Club.objects.all()
+    authors = User.objects.all()
+
+    context = {
+        'posts': posts,
+        'total_posts': total_posts,
+        'today_posts': today_posts,
+        'week_posts': week_posts,
+        'total_clubs': total_clubs,
+        'active_clubs': active_clubs,
+        'active_authors': active_authors,
+        'clubs': clubs,
+        'authors': authors,
+        'search_query': search_query,
+        'club_filter': club_filter,
+        'author_filter': author_filter,
+    }
+    return render(request, 'users/manage_posts.html', context)
+
 
 @login_required
+def delete_post(request, post_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() not in ['admin', 'lecturer']:
+        messages.error(request, "You do not have permission to delete posts.")
+        return redirect('dashboard')
+
+    post = get_object_or_404(ClubPost, id=post_id)
+    post.delete()
+    messages.success(request, "Post deleted successfully.")
+    return redirect('manage_posts')
+
+
+# -------------------------
+# Student Activity & Events
+# -------------------------
+@login_required
 def my_activity(request):
-    """Student's activity page - shows their interactions"""
     user = request.user
-
-    user_clubs = (
-        user.clubs.all()
-        .annotate(post_count=Count('posts', filter=Q(posts__author=user)))
+    user_clubs = user.clubs.all().annotate(
+        post_count=Count('posts', filter=Q(posts__author=user))
     )
-
     rsvp_events = Event.objects.filter(attendees=user).order_by('date')
-
-    voted_polls = []
-    for poll in Poll.objects.filter(club__in=user_clubs):
-        if poll.options.filter(votes=user).exists():
-            voted_polls.append(poll)
-
+    voted_polls = [poll for poll in Poll.objects.filter(club__in=user_clubs)
+                   if poll.options.filter(votes=user).exists()]
     user_posts = ClubPost.objects.filter(author=user).order_by('-created_at')
 
     context = {
@@ -183,14 +227,10 @@ def my_activity(request):
 
 @login_required
 def events_list(request):
-    """List all upcoming events"""
     user = request.user
     user_clubs = user.clubs.all()
-
     all_events = Event.objects.filter(date__gte=timezone.now()).order_by('date')
-
     my_clubs_events = all_events.filter(club__in=user_clubs)
-
     rsvp_events = all_events.filter(attendees=user)
 
     context = {
@@ -203,25 +243,17 @@ def events_list(request):
 
 @login_required
 def send_feedback(request):
-    """Send feedback form"""
     if request.method == 'POST':
-        subject = request.POST.get('subject')
-        message = request.POST.get('message')
-        category = request.POST.get('category')
-
         messages.success(request, 'Your feedback has been submitted successfully!')
         return redirect('student_dashboard')
-
     return render(request, 'users/send_feedback.html')
 
 
 # -------------------------
 # Poll Management (Lecturer)
 # -------------------------
-
 @login_required
 def create_poll(request):
-    """Create a new poll for a club"""
     if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
         messages.error(request, 'Only lecturers can create polls.')
         return redirect('dashboard')
@@ -229,108 +261,191 @@ def create_poll(request):
     if request.method == 'POST':
         club_id = request.POST.get('club')
         question = request.POST.get('question')
-        description = request.POST.get('description', '')
-        end_date = request.POST.get('end_date')
-        allow_multiple = request.POST.get('allow_multiple') == 'on'
-        anonymous = request.POST.get('anonymous') == 'on'
-
-        options = []
-        for key, value in request.POST.items():
-            if key.startswith('option_') and value.strip():
-                options.append(value.strip())
+        options = [v.strip() for k, v in request.POST.items() if k.startswith('option_') and v.strip()]
 
         if club_id and question and len(options) >= 2:
             club = get_object_or_404(Club, id=club_id)
-            
-            poll = Poll.objects.create(
-                club=club,
-                question=question,
-                created_by=request.user
-            )
-
+            poll = Poll.objects.create(club=club, question=question, created_by=request.user)
             for option_text in options:
                 PollOption.objects.create(poll=poll, text=option_text)
-
             messages.success(request, f'Poll "{question}" created successfully with {len(options)} options!')
             return redirect('lecturer_dashboard')
         else:
             messages.error(request, 'Please fill in the club, question, and at least 2 options.')
 
     clubs = Club.objects.all()
-    context = {'clubs': clubs}
-    return render(request, 'users/create_poll.html', context)
+    return render(request, 'users/create_poll.html', {'clubs': clubs})
 
 
 # -------------------------
-# Announcements (reuse clubs template)
+# Announcements, Reports & Analytics
 # -------------------------
-
 @login_required
 def announcements(request):
-    """Reuse clubs post_announcement template for lecturers"""
     if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
         messages.error(request, 'Only lecturers can post announcements.')
         return redirect('dashboard')
-    
     return render(request, 'clubs/post_announcement.html')
 
 
-# -------------------------
-# Reports & Analytics (Lecturer)
-# -------------------------
-
 @login_required
 def reports(request):
-    """View reports and analytics for lecturers"""
     if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
         messages.error(request, 'Only lecturers can view reports.')
         return redirect('dashboard')
-    
-    # Get all clubs and their stats
+
     clubs = Club.objects.all().annotate(
         member_count=Count('members'),
         event_count=Count('events'),
         post_count=Count('posts'),
         poll_count=Count('polls')
     )
-    
-    # Get total statistics
-    total_clubs = clubs.count()
-    total_students = Profile.objects.filter(role='student').count()
-    total_events = Event.objects.count()
-    total_polls = Poll.objects.count()
-    
-    # Get engagement stats
-    total_rsvps = Event.objects.aggregate(
-        total=Count('attendees')
-    )['total'] or 0
-    
-    # Get recent activity
+    total_rsvps = Event.objects.aggregate(total=Count('attendees'))['total'] or 0
     recent_events = Event.objects.order_by('-date')[:5]
     recent_polls = Poll.objects.order_by('-created_at')[:5]
-    
+    for poll in recent_polls:
+        poll.total_votes = sum(option.votes.count() for option in poll.options.all())
+
     context = {
         'clubs': clubs,
-        'total_clubs': total_clubs,
-        'total_students': total_students,
-        'total_events': total_events,
-        'total_polls': total_polls,
+        'total_clubs': clubs.count(),
+        'total_students': Profile.objects.filter(role='student').count(),
+        'total_events': Event.objects.count(),
+        'total_polls': Poll.objects.count(),
         'total_rsvps': total_rsvps,
         'recent_events': recent_events,
         'recent_polls': recent_polls,
     }
-    
     return render(request, 'users/reports.html', context)
+
+
+# -------------------------
+# Student Points
+# -------------------------
+@login_required
+def award_points(request, club_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
+        messages.error(request, 'Only lecturers can award points.')
+        return redirect('dashboard')
+
+    club = get_object_or_404(Club, id=club_id)
+    if request.method == 'POST':
+        student_id = request.POST.get('student')
+        points = request.POST.get('points')
+        reason = request.POST.get('reason')
+        if student_id and points and reason:
+            student = get_object_or_404(User, id=student_id)
+            StudentPoints.objects.create(
+                student=student, club=club, points=int(points), reason=reason, awarded_by=request.user
+            )
+            messages.success(request, f'Successfully awarded {points} points to {student.username}!')
+            return redirect('award_points', club_id=club_id)
+
+    members = club.members.all()
+    recent_awards = StudentPoints.objects.filter(club=club).order_by('-awarded_at')[:10]
+    return render(request, 'users/award_points.html', {'club': club, 'members': members, 'recent_awards': recent_awards})
+
+
+@login_required
+def student_points_summary(request):
+    user = request.user
+    points_history = StudentPoints.objects.filter(student=user).order_by('-awarded_at')
+    total_points = sum(p.points for p in points_history)
+    points_by_club = StudentPoints.objects.filter(student=user).values('club__name').annotate(total=Sum('points')).order_by('-total')
+
+    return render(request, 'users/student_points.html', {
+        'points_history': points_history,
+        'total_points': total_points,
+        'points_by_club': points_by_club,
+    })
+
+
+# -------------------------
+# User Management (Admin)
+# -------------------------
+@login_required
+def manage_users(request):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, 'Only admins can manage users.')
+        return redirect('dashboard')
+
+    search_query = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    status_filter = request.GET.get('status', '')
+
+    users = User.objects.all().order_by('-date_joined')
+    if search_query:
+        users = users.filter(Q(username__icontains=search_query) | Q(profile__name__icontains=search_query))
+    if role_filter:
+        users = users.filter(profile__role=role_filter)
+    if status_filter == 'active':
+        users = users.filter(is_active=True)
+    elif status_filter == 'inactive':
+        users = users.filter(is_active=False)
+
+    recent_users = User.objects.all().order_by('-date_joined')[:5]
+    week_ago = timezone.now() - timedelta(days=7)
+    active_this_week = User.objects.filter(last_login__gte=week_ago).count()
+
+    return render(request, 'users/manage_users.html', {
+        'users': users,
+        'total_users': User.objects.count(),
+        'total_students': Profile.objects.filter(role='student').count(),
+        'total_lecturers': Profile.objects.filter(role='lecturer').count(),
+        'total_admins': Profile.objects.filter(role='admin').count(),
+        'recent_users': recent_users,
+        'active_this_week': active_this_week,
+        'search_query': search_query,
+        'role_filter': role_filter,
+        'status_filter': status_filter,
+    })
+
+
+@login_required
+def edit_user(request, user_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, 'Only admins can edit users.')
+        return redirect('dashboard')
+
+    user_to_edit = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        role = request.POST.get('role')
+        is_active = request.POST.get('is_active') == 'on'
+
+        user_to_edit.profile.name = name
+        user_to_edit.profile.role = role
+        user_to_edit.profile.save()
+        user_to_edit.is_active = is_active
+        user_to_edit.save()
+
+        messages.success(request, f'User {user_to_edit.username} updated successfully!')
+        return redirect('manage_users')
+
+    return render(request, 'users/edit_user.html', {'user_to_edit': user_to_edit})
+
+
+@login_required
+def delete_user(request, user_id):
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, 'Only admins can delete users.')
+        return redirect('dashboard')
+
+    user_to_delete = get_object_or_404(User, id=user_id)
+    if user_to_delete.id == request.user.id:
+        messages.error(request, 'You cannot delete your own account!')
+        return redirect('manage_users')
+
+    username = user_to_delete.username
+    user_to_delete.delete()
+    messages.success(request, f'User {username} has been deleted successfully!')
+    return redirect('manage_users')
 
 
 # -------------------------
 # Signup view
 # -------------------------
 def signup(request):
-    """
-    Allow new users to register using Django's UserCreationForm.
-    Automatically creates a Profile with role 'student'.
-    """
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -339,88 +454,145 @@ def signup(request):
             return redirect("login")
     else:
         form = UserCreationForm()
-
     return render(request, "registration/signup.html", {"form": form})
 
 
 # -------------------------
-# Custom LogoutView (GET allowed)
+# Custom LogoutView
 # -------------------------
-
 class CustomLogoutView(LogoutView):
     next_page = "login"
 
     def get(self, request, *args, **kwargs):
-        """Allow logout via GET requests"""
         return self.post(request, *args, **kwargs)
 
+# -------------------------
+# Academic (GPA/Marks)
+# -------------------------
 @login_required
-def award_points(request, club_id):
-    """Lecturer awards points to students for club participation"""
-    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
-        messages.error(request, 'Only lecturers can award points.')
-        return redirect('dashboard')
-    
-    club = get_object_or_404(Club, id=club_id)
-    
-    if request.method == 'POST':
-        student_id = request.POST.get('student')
-        points = request.POST.get('points')
-        reason = request.POST.get('reason')
-        
-        if student_id and points and reason:
-            from django.contrib.auth.models import User
-            student = get_object_or_404(User, id=student_id)
-            
-            StudentPoints.objects.create(
-                student=student,
-                club=club,
-                points=int(points),
-                reason=reason,
-                awarded_by=request.user
-            )
-            
-            messages.success(request, f'Successfully awarded {points} points to {student.username}!')
-            return redirect('award_points', club_id=club_id)
-    
-    # Get club members for the dropdown
-    members = club.members.all()
-    
-    # Get recent awards for this club
-    recent_awards = StudentPoints.objects.filter(club=club).order_by('-awarded_at')[:10]
-    
-    context = {
-        'club': club,
-        'members': members,
-        'recent_awards': recent_awards,
-    }
-    
-    return render(request, 'users/award_points.html', context)
-
-
-@login_required
-def student_points_summary(request):
-    """View student's total points and history"""
+def student_grades(request):
     user = request.user
-    
-    # Get all points received by the student
-    points_history = StudentPoints.objects.filter(student=user).order_by('-awarded_at')
-    
-    # Calculate total points
-    total_points = sum(p.points for p in points_history)
-    
-    # Group by club
-    from django.db.models import Sum
-    points_by_club = StudentPoints.objects.filter(student=user).values(
-        'club__name'
-    ).annotate(
-        total=Sum('points')
-    ).order_by('-total')
-    
+    marks = StudentMark.objects.filter(student=user).select_related('course')
+    gpa_record = StudentGPA.objects.filter(student=user).last()
+    return render(request, "users/student_grades.html", {
+        'marks': marks,
+        'gpa': gpa_record.gpa if gpa_record else 0.0,
+        'cgpa': gpa_record.cgpa if gpa_record else 0.0,
+    })
+
+
+@login_required
+def lecturer_add_mark(request):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role.lower() != "lecturer":
+        messages.error(request, "Only lecturers can add marks.")
+        return redirect("dashboard")
+
+    # Handle POST (save marks)
+    if request.method == "POST":
+        student_id = request.POST.get("student")
+        course_id = request.POST.get("course")
+        marks = request.POST.get("marks")
+
+        if not (student_id and course_id and marks):
+            messages.error(request, "All fields are required.")
+            return redirect("lecturer_add_mark")
+
+        try:
+            student = User.objects.get(id=student_id)
+            course = Course.objects.get(id=course_id)
+        except (User.DoesNotExist, Course.DoesNotExist):
+            messages.error(request, "Invalid student or course.")
+            return redirect("lecturer_add_mark")
+
+        # Convert marks and calculate grade details
+        marks = float(marks)
+        grade_point, grade_letter, remarks = get_grade_and_point(marks)
+
+        # Save or update the student's mark
+        StudentMark.objects.update_or_create(
+            student=student,
+            course=course,
+            defaults={
+                "marks": marks,
+                "grade_point": grade_point,
+                "grade_letter": grade_letter,
+                "remarks": remarks,
+            },
+        )
+
+        messages.success(
+            request,
+            f"Mark for {student.profile.name} in {course.name} saved successfully ({grade_letter})."
+        )
+        return redirect("lecturer_add_mark")
+
+    # GET — load form
+    students = User.objects.filter(profile__role="student").select_related("profile").order_by("profile__name")
+    courses = Course.objects.all().order_by("name")
+    student_marks = StudentMark.objects.all().select_related("student__profile", "course")
+
     context = {
-        'points_history': points_history,
-        'total_points': total_points,
-        'points_by_club': points_by_club,
+        "students": students,
+        "courses": courses,
+        "student_marks": student_marks,
     }
-    
-    return render(request, 'users/student_points.html', context)
+    return render(request, "users/lecturer_add_mark.html", context)
+
+
+@login_required
+def edit_mark(request, mark_id):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role.lower() != "lecturer":
+        messages.error(request, "Only lecturers can edit marks.")
+        return redirect("dashboard")
+
+    mark = get_object_or_404(StudentMark, id=mark_id)
+
+    if request.method == "POST":
+        marks = request.POST.get("marks")
+        if not marks:
+            messages.error(request, "Marks are required.")
+            return redirect("edit_mark", mark_id=mark_id)
+
+        marks = float(marks)
+        grade_point, grade_letter, remarks = get_grade_and_point(marks)
+
+        mark.marks = marks
+        mark.grade_point = grade_point
+        mark.grade_letter = grade_letter
+        mark.remarks = remarks
+        mark.save()
+
+        messages.success(request, f"Mark updated successfully for {mark.student.profile.name} in {mark.course.name}.")
+        return redirect("lecturer_add_mark")
+
+    context = {
+        "mark": mark
+    }
+    return render(request, "users/edit_mark.html", context)
+
+
+@login_required
+def delete_mark(request, mark_id):
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role.lower() != "lecturer":
+        messages.error(request, "Only lecturers can delete marks.")
+        return redirect("dashboard")
+
+    mark = get_object_or_404(StudentMark, id=mark_id)
+    mark.delete()
+    messages.success(request, f"Mark for {mark.student.profile.name} in {mark.course.name} deleted successfully!")
+    return redirect("lecturer_add_mark")
+
+@login_required
+def grade_panel(request):
+    user = request.user
+    student_courses = StudentMark.objects.filter(student=user).select_related('course')
+    gpa_record = StudentGPA.objects.filter(student=user).last()
+    context = {
+        'student_courses': student_courses,
+        'gpa': gpa_record.gpa if gpa_record else 0.0,
+        'cgpa': gpa_record.cgpa if gpa_record else 0.0,
+    }
+    return render(request, 'users/grade_panel.html', context)

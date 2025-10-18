@@ -11,6 +11,7 @@ urlpatterns = [
     path('clubs/<int:club_id>/', views.club_detail, name='club_detail'),
     path('clubs/<int:club_id>/toggle-membership/', views.toggle_membership, name='toggle_membership'),
     path('clubs/<int:club_id>/new-post/', views.new_post, name='new_post'),
+    path('create/', views.create_club, name='create_club'),
     
     # Poll & Event views
     path('polls/<int:poll_id>/vote/', views.vote_poll, name='vote_poll'),

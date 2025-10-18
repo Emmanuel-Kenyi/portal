@@ -31,24 +31,25 @@
         </div>
 
         <nav class="sidebar-nav">
-            <ul>
-                <li><a href="{% url 'student_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
-                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
-                <li>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="sidebar-link-btn">
-            <span class="nav-icon">🚪</span> Logout
-        </button>
-    </form>
-</li>
+    <ul>
+        <li><a href="{% url 'student_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Home</a></li>
+        <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+        <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+        <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+        <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
+        <li><a href="{% url 'grade_panel' %}" class="scroll-to-panel"><span class="nav-icon">📈</span> Grades</a></li>
+        <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+        <li>
+            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="sidebar-link-btn">
+                    <span class="nav-icon">🚪</span> Logout
+                </button>
+            </form>
+        </li>
+    </ul>
+</nav>
 
-            </ul>
-        </nav>
     </aside>
 
     <!-- Main Dashboard Content -->
@@ -204,6 +205,53 @@
                         {% else %}
                         <div class="empty-state">
                             <p>No upcoming events at the moment.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Grades & GPA Section -->
+                <section class="panel grades-panel">
+                    <div class="panel-header">
+                        <h2>My Grades & GPA</h2>
+                        <div class="panel-actions">
+                            <button class="panel-toggle">−</button>
+                            <button class="panel-close">✕</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        {% if student_courses %}
+                        <div class="grades-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Marks</th>
+                                        <th>Grade</th>
+                                        <th>Grade Point</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mark in student_courses %}
+                                    <tr>
+                                        <td>{{ mark.course.name }}</td>
+                                        <td>{{ mark.marks }}</td>
+                                        <td>{{ mark.grade_letter }}</td>
+                                        <td>{{ mark.grade_point }}</td>
+                                        <td>{{ mark.remarks }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="gpa-summary">
+                            <p><strong>GPA:</strong> {{ gpa }}</p>
+                            <p><strong>CGPA:</strong> {{ cgpa }}</p>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No grades available yet.</p>
                         </div>
                         {% endif %}
                     </div>

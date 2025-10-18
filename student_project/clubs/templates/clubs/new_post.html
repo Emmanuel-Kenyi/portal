@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,275 +10,268 @@
     <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'css/new_post.css' %}">
 </head>
+
 <body>
-<div class="dashboard-wrapper">
+    <div class="dashboard-wrapper">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-section">
-                <span class="logo-icon">🎓</span>
-                <span class="logo-text">CLUB MS</span>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
             </div>
-        </div>
 
-        <div class="user-profile">
-            {% if user.profile.avatar %}
+            <div class="user-profile">
+                {% if user.profile.avatar %}
                 <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
-            {% else %}
+                {% else %}
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
-            {% endif %}
-            <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
-        </div>
-
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send Feedback</a></li>
-                <li>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="sidebar-link-btn">
-            <span class="nav-icon">🚪</span> Logout
-        </button>
-    </form>
-</li>
-
-                
-            </ul>
-        </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="dashboard-main">
-        <!-- Top Header Bar -->
-        <header class="top-header">
-            <div class="header-left">
-                <button class="menu-toggle">☰</button>
-                <h1 class="page-title">Club Management System | New Post</h1>
-            </div>
-            <div class="header-right">
-                <a href="{% url 'club_detail' club.id %}" class="btn-back">← Back to Club</a>
-            </div>
-        </header>
-
-        <div class="dashboard-content">
-            <!-- Breadcrumb -->
-            <div class="breadcrumb">
-                <a href="{% url 'student_dashboard' %}">Student</a>
-                <span class="separator">></span>
-                <a href="{% url 'club_list' %}">Clubs</a>
-                <span class="separator">></span>
-                <a href="{% url 'club_detail' club.id %}">{{ club.name }}</a>
-                <span class="separator">></span>
-                <span class="current">New Post</span>
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
             </div>
 
-            <!-- Post Creation Container -->
-            <div class="post-creation-container">
-                
-                <!-- Header Section -->
-                <div class="creation-header">
-                    <div class="header-icon">📝</div>
-                    <div class="header-content">
-                        <h1>Create New Announcement</h1>
-                        <p class="club-info">
-                            <span class="club-badge">{{ club.name }}</span>
-                            <span class="author-info">Posted by: <strong>{{ user.username }}</strong></span>
-                        </p>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
+                    <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                    <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'send_feedback' %}" class="active"><span class="nav-icon">💬</span> Send
+                            Feedback</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
+                            </button>
+                        </form>
+                    </li>
+
+
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Top Header Bar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="menu-toggle">☰</button>
+                    <h1 class="page-title">Club Management System | New Post</h1>
+                </div>
+                <div class="header-right">
+                    <a href="{% url 'club_detail' club.id %}" class="btn-back">← Back to Club</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Breadcrumb -->
+                <div class="breadcrumb">
+                    <a href="{% url 'student_dashboard' %}">Student</a>
+                    <span class="separator">></span>
+                    <a href="{% url 'club_list' %}">Clubs</a>
+                    <span class="separator">></span>
+                    <a href="{% url 'club_detail' club.id %}">{{ club.name }}</a>
+                    <span class="separator">></span>
+                    <span class="current">New Post</span>
+                </div>
+
+                <!-- Post Creation Container -->
+                <div class="post-creation-container">
+
+                    <!-- Header Section -->
+                    <div class="creation-header">
+                        <div class="header-icon">📝</div>
+                        <div class="header-content">
+                            <h1>Create New Announcement</h1>
+                            <p class="club-info">
+                                <span class="club-badge">{{ club.name }}</span>
+                                <span class="author-info">Posted by: <strong>{{ user.username }}</strong></span>
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Form Section -->
-                <div class="form-container">
-                    <form method="post" id="postForm">
-                        {% csrf_token %}
-                        
-                        <div class="form-section">
-                            <h3>📋 Post Details</h3>
-                            <p class="section-description">Fill in the details for your announcement</p>
-                            
-                            <div class="form-group">
-                                <label for="id_title">Post Title *</label>
-                                <input 
-                                    type="text" 
-                                    name="title" 
-                                    id="id_title" 
-                                    class="form-control" 
-                                    placeholder="Enter a clear and descriptive title"
-                                    required
-                                    maxlength="200"
-                                >
-                                <small class="help-text">Maximum 200 characters</small>
-                            </div>
+                    <!-- Form Section -->
+                    <div class="form-container">
+                        <form method="post" id="postForm">
+                            {% csrf_token %}
 
-                            <div class="form-group">
-                                <label for="id_content">Post Content *</label>
-                                <textarea 
-                                    name="content" 
-                                    id="id_content" 
-                                    class="form-control" 
-                                    rows="10"
-                                    placeholder="Write your announcement here. Be clear and concise..."
-                                    required
-                                ></textarea>
-                                <small class="help-text">Share important information, updates, or announcements with club members</small>
-                            </div>
-                        </div>
+                            <div class="form-section">
+                                <h3>📋 Post Details</h3>
+                                <p class="section-description">Fill in the details for your announcement</p>
 
-                        <!-- Preview Section -->
-                        <div class="preview-section">
-                            <h3>👁️ Preview</h3>
-                            <div class="post-preview">
-                                <div class="preview-header">
-                                    <h4 id="previewTitle">Your title will appear here</h4>
-                                    <span class="preview-meta">{{ user.username }} • Just now</span>
+                                <div class="form-group">
+                                    <label for="id_title">Post Title *</label>
+                                    <input type="text" name="title" id="id_title" class="form-control"
+                                        placeholder="Enter a clear and descriptive title" required maxlength="200">
+                                    <small class="help-text">Maximum 200 characters</small>
                                 </div>
-                                <div class="preview-content">
-                                    <p id="previewContent">Your content will appear here as you type...</p>
+
+                                <div class="form-group">
+                                    <label for="id_content">Post Content *</label>
+                                    <textarea name="content" id="id_content" class="form-control" rows="10"
+                                        placeholder="Write your announcement here. Be clear and concise..."
+                                        required></textarea>
+                                    <small class="help-text">Share important information, updates, or announcements with
+                                        club members</small>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Guidelines Section -->
-                        <div class="guidelines-section">
-                            <h3>✅ Posting Guidelines</h3>
-                            <ul>
-                                <li>Keep your title clear and concise</li>
-                                <li>Ensure content is relevant to club members</li>
-                                <li>Be respectful and professional</li>
-                                <li>Avoid sharing personal or sensitive information</li>
-                                <li>Proofread before publishing</li>
-                            </ul>
-                        </div>
+                            <!-- Preview Section -->
+                            <div class="preview-section">
+                                <h3>👁️ Preview</h3>
+                                <div class="post-preview">
+                                    <div class="preview-header">
+                                        <h4 id="previewTitle">Your title will appear here</h4>
+                                        <span class="preview-meta">{{ user.username }} • Just now</span>
+                                    </div>
+                                    <div class="preview-content">
+                                        <p id="previewContent">Your content will appear here as you type...</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <!-- Form Actions -->
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-publish">
-                                <span class="btn-icon">📢</span>
-                                Publish Announcement
-                            </button>
-                            <a href="{% url 'club_detail' club.id %}" class="btn btn-cancel">Cancel</a>
-                            <button type="button" class="btn btn-draft" onclick="alert('Save as draft functionality - to be implemented')">
-                                💾 Save Draft
-                            </button>
-                        </div>
-                    </form>
+                            <!-- Guidelines Section -->
+                            <div class="guidelines-section">
+                                <h3>✅ Posting Guidelines</h3>
+                                <ul>
+                                    <li>Keep your title clear and concise</li>
+                                    <li>Ensure content is relevant to club members</li>
+                                    <li>Be respectful and professional</li>
+                                    <li>Avoid sharing personal or sensitive information</li>
+                                    <li>Proofread before publishing</li>
+                                </ul>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-publish">
+                                    <span class="btn-icon">📢</span>
+                                    Publish Announcement
+                                </button>
+                                <a href="{% url 'club_detail' club.id %}" class="btn btn-cancel">Cancel</a>
+                                <button type="button" class="btn btn-draft"
+                                    onclick="alert('Save as draft functionality - to be implemented')">
+                                    💾 Save Draft
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                 </div>
 
             </div>
+        </main>
+    </div>
 
-        </div>
-    </main>
-</div>
+    <script>
+        // Menu toggle for mobile
+        document.querySelector('.menu-toggle')?.addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('sidebar-open');
+        });
 
-<script>
-// Menu toggle for mobile
-document.querySelector('.menu-toggle')?.addEventListener('click', function() {
-    document.querySelector('.sidebar').classList.toggle('sidebar-open');
-});
+        // Live preview functionality
+        const titleInput = document.getElementById('id_title');
+        const contentInput = document.getElementById('id_content');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewContent = document.getElementById('previewContent');
 
-// Live preview functionality
-const titleInput = document.getElementById('id_title');
-const contentInput = document.getElementById('id_content');
-const previewTitle = document.getElementById('previewTitle');
-const previewContent = document.getElementById('previewContent');
+        titleInput?.addEventListener('input', function () {
+            previewTitle.textContent = this.value || 'Your title will appear here';
+        });
 
-titleInput?.addEventListener('input', function() {
-    previewTitle.textContent = this.value || 'Your title will appear here';
-});
+        contentInput?.addEventListener('input', function () {
+            previewContent.textContent = this.value || 'Your content will appear here as you type...';
+        });
 
-contentInput?.addEventListener('input', function() {
-    previewContent.textContent = this.value || 'Your content will appear here as you type...';
-});
+        // Character counter for title
+        titleInput?.addEventListener('input', function () {
+            const maxLength = this.maxLength;
+            const currentLength = this.value.length;
+            const helpText = this.nextElementSibling;
 
-// Character counter for title
-titleInput?.addEventListener('input', function() {
-    const maxLength = this.maxLength;
-    const currentLength = this.value.length;
-    const helpText = this.nextElementSibling;
-    
-    if (currentLength > maxLength - 20) {
-        helpText.textContent = (maxLength - currentLength) + ' characters remaining';
-        helpText.style.color = currentLength >= maxLength ? '#dd4b39' : '#f39c12';
-    } else {
-        helpText.textContent = 'Maximum 200 characters';
-        helpText.style.color = '#777777';
-    }
-});
-
-// Form validation
-document.getElementById('postForm')?.addEventListener('submit', function(e) {
-    const title = titleInput.value.trim();
-    const content = contentInput.value.trim();
-    
-    if (!title || !content) {
-        e.preventDefault();
-        alert('Please fill in both title and content fields!');
-        return false;
-    }
-    
-    if (title.length < 5) {
-        e.preventDefault();
-        alert('Title must be at least 5 characters long!');
-        return false;
-    }
-    
-    if (content.length < 10) {
-        e.preventDefault();
-        alert('Content must be at least 10 characters long!');
-        return false;
-    }
-});
-
-// Auto-save draft (optional feature)
-let autoSaveTimer;
-function autoSaveDraft() {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(function() {
-        const title = titleInput.value;
-        const content = contentInput.value;
-        
-        if (title || content) {
-            localStorage.setItem('draftPost_' + '{{ club.id }}', JSON.stringify({
-                title: title,
-                content: content,
-                timestamp: new Date().toISOString()
-            }));
-            console.log('Draft auto-saved');
-        }
-    }, 2000);
-}
-
-titleInput?.addEventListener('input', autoSaveDraft);
-contentInput?.addEventListener('input', autoSaveDraft);
-
-// Load draft on page load
-window.addEventListener('load', function() {
-    const draft = localStorage.getItem('draftPost_' + '{{ club.id }}');
-    if (draft) {
-        try {
-            const data = JSON.parse(draft);
-            if (confirm('A draft was found. Would you like to restore it?')) {
-                titleInput.value = data.title;
-                contentInput.value = data.content;
-                previewTitle.textContent = data.title || 'Your title will appear here';
-                previewContent.textContent = data.content || 'Your content will appear here as you type...';
+            if (currentLength > maxLength - 20) {
+                helpText.textContent = (maxLength - currentLength) + ' characters remaining';
+                helpText.style.color = currentLength >= maxLength ? '#dd4b39' : '#f39c12';
+            } else {
+                helpText.textContent = 'Maximum 200 characters';
+                helpText.style.color = '#777777';
             }
-        } catch(e) {
-            console.error('Error loading draft:', e);
-        }
-    }
-});
+        });
 
-// Clear draft after successful submission
-document.getElementById('postForm')?.addEventListener('submit', function() {
-    localStorage.removeItem('draftPost_' + '{{ club.id }}');
-});
-</script>
+        // Form validation
+        document.getElementById('postForm')?.addEventListener('submit', function (e) {
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+
+            if (!title || !content) {
+                e.preventDefault();
+                alert('Please fill in both title and content fields!');
+                return false;
+            }
+
+            if (title.length < 5) {
+                e.preventDefault();
+                alert('Title must be at least 5 characters long!');
+                return false;
+            }
+
+            if (content.length < 10) {
+                e.preventDefault();
+                alert('Content must be at least 10 characters long!');
+                return false;
+            }
+        });
+
+        // Auto-save draft (optional feature)
+        let autoSaveTimer;
+        function autoSaveDraft() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(function () {
+                const title = titleInput.value;
+                const content = contentInput.value;
+
+                if (title || content) {
+                    localStorage.setItem('draftPost_' + '{{ club.id }}', JSON.stringify({
+                        title: title,
+                        content: content,
+                        timestamp: new Date().toISOString()
+                    }));
+                    console.log('Draft auto-saved');
+                }
+            }, 2000);
+        }
+
+        titleInput?.addEventListener('input', autoSaveDraft);
+        contentInput?.addEventListener('input', autoSaveDraft);
+
+        // Load draft on page load
+        window.addEventListener('load', function () {
+            const draft = localStorage.getItem('draftPost_' + '{{ club.id }}');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    if (confirm('A draft was found. Would you like to restore it?')) {
+                        titleInput.value = data.title;
+                        contentInput.value = data.content;
+                        previewTitle.textContent = data.title || 'Your title will appear here';
+                        previewContent.textContent = data.content || 'Your content will appear here as you type...';
+                    }
+                } catch (e) {
+                    console.error('Error loading draft:', e);
+                }
+            }
+        });
+
+        // Clear draft after successful submission
+        document.getElementById('postForm')?.addEventListener('submit', function () {
+            localStorage.removeItem('draftPost_' + '{{ club.id }}');
+        });
+    </script>
 </body>
+
 </html>

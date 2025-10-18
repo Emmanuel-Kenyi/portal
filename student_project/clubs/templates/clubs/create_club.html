@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Create Club</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+        <main class="dashboard-main">
+            <header class="top-header">
+                <h1>Create New Club</h1>
+                <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+            </header>
+            <div class="dashboard-content">
+                <div class="form-container">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-success">Create Club</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

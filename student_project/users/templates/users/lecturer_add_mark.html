@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student Marks | Lecturer Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+<body>
+<div class="dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <span class="logo-icon">🎓</span>
+                <span class="logo-text">CLUB MS</span>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+            {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+            {% endif %}
+            <h3>{{ user.profile.name }}</h3>
+            <p class="sidebar-role">{{ user.profile.role|title }}</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
+                <li><a href="{% url 'lecturer_add_mark' %}" class="active"><span class="nav-icon">📝</span> Add Student Marks</a></li>
+                <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <header class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle">☰</button>
+                <h1 class="page-title">Add Student Marks</h1>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <span>Lecturer</span>
+                <span class="separator">></span>
+                <span class="current">Add Student Marks</span>
+            </div>
+
+            <!-- Form to Add/Update Marks -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Enter Student Marks</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <form method="post" action="{% url 'lecturer_add_mark' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="student">Student:</label>
+                            <select name="student" id="student" required>
+                                <option value="">Select Student</option>
+                                {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.profile.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="course">Course:</label>
+                            <select name="course" id="course" required>
+                                <option value="">Select Course</option>
+                                {% for course in courses %}
+                                    <option value="{{ course.id }}">{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="marks">Marks:</label>
+                            <input type="number" name="marks" id="marks" min="0" max="100" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Marks</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Table Showing Existing Marks -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Existing Student Marks</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    {% if student_marks %}
+                        <div class="marks-table">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Course</th>
+                                        <th>Marks</th>
+                                        <th>Grade</th>
+                                        <th>Grade Point</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mark in student_marks %}
+                                        <tr>
+                                            <td>{{ mark.student.profile.name }}</td>
+                                            <td>{{ mark.course.name }}</td>
+                                            <td>{{ mark.marks }}</td>
+                                            <td>{{ mark.grade_letter }}</td>
+                                            <td>{{ mark.grade_point }}</td>
+                                            <td>
+                                                <a href="{% url 'edit_mark' mark.id %}" class="btn btn-warning">Edit</a>
+                                                <a href="{% url 'delete_mark' mark.id %}" class="btn btn-danger">Delete</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">📝</div>
+                            <h2>No Marks Added Yet</h2>
+                            <p>Start by adding marks for your students above.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+// Panel toggle functionality
+document.querySelectorAll('.panel-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const panel = this.closest('.panel');
+        const body = panel.querySelector('.panel-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        this.textContent = body.style.display === 'none' ? '+' : '−';
+    });
+});
+
+// Menu toggle for mobile
+document.querySelector('.menu-toggle')?.addEventListener('click', function() {
+    document.querySelector('.sidebar').classList.toggle('sidebar-open');
+});
+</script>
+</body>
+</html>
