@@ -1,3 +1,8 @@
+import os
+import threading
+from django.http import FileResponse
+from django.conf import settings
+from reportlab.pdfgen import canvas
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -288,19 +293,40 @@ def announcements(request):
     return render(request, 'clubs/post_announcement.html')
 
 
+
 @login_required
 def reports(request):
+    # Only lecturers can view
     if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'lecturer':
         messages.error(request, 'Only lecturers can view reports.')
         return redirect('dashboard')
 
+    # Fetch clubs and annotate counts
     clubs = Club.objects.all().annotate(
         member_count=Count('members'),
         event_count=Count('events'),
         post_count=Count('posts'),
         poll_count=Count('polls')
     )
+
+    # Calculate raw engagement score for each club
+    for club in clubs:
+        club.raw_score = (
+            club.member_count * 0.2 +
+            club.event_count * 0.3 +
+            club.post_count * 0.3 +
+            club.poll_count * 0.2
+        )
+
+    # Normalize scores to 100%
+    max_score = max([club.raw_score for club in clubs], default=1)  # prevent division by zero
+    for club in clubs:
+        club.engagement_percentage = (club.raw_score / max_score) * 100
+
+    # Total RSVPs
     total_rsvps = Event.objects.aggregate(total=Count('attendees'))['total'] or 0
+
+    # Recent events & polls
     recent_events = Event.objects.order_by('-date')[:5]
     recent_polls = Poll.objects.order_by('-created_at')[:5]
     for poll in recent_polls:
@@ -316,6 +342,7 @@ def reports(request):
         'recent_events': recent_events,
         'recent_polls': recent_polls,
     }
+
     return render(request, 'users/reports.html', context)
 
 
@@ -596,3 +623,203 @@ def grade_panel(request):
         'cgpa': gpa_record.cgpa if gpa_record else 0.0,
     }
     return render(request, 'users/grade_panel.html', context)
+
+
+# -------------------------
+# Admin: Asynchronous Club Reports
+# -------------------------
+def generate_report_file(file_path):
+    """Generate a detailed School Clubs Management report asynchronously."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import inch
+    from datetime import datetime
+
+    c = canvas.Canvas(file_path, pagesize=A4)
+    width, height = A4
+
+    # Title
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(150, height - 50, "School Clubs Management System Report")
+
+    c.setFont("Helvetica", 12)
+    c.drawString(50, height - 80, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+    y = height - 120
+
+    # Section 1: Clubs Summary
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "1. Clubs Overview")
+    y -= 25
+
+    clubs = Club.objects.all()
+    if not clubs.exists():
+        c.setFont("Helvetica", 12)
+        c.drawString(70, y, "No clubs found in the system.")
+        y -= 20
+    else:
+        for club in clubs:
+            members = club.members.count()
+            events = Event.objects.filter(club=club).count()
+            posts = ClubPost.objects.filter(club=club).count()
+            polls = Poll.objects.filter(club=club).count()
+
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(70, y, f"- {club.name}")
+            y -= 15
+
+            c.setFont("Helvetica", 11)
+            c.drawString(90, y, f"Description: {club.description[:80]}...")
+            y -= 12
+            c.drawString(90, y, f"Meeting Time: {club.meeting_time}")
+            y -= 12
+            c.drawString(90, y, f"Members: {members}, Events: {events}, Posts: {posts}, Polls: {polls}")
+            y -= 25
+
+            if y < 100:
+                c.showPage()
+                y = height - 100
+
+    # Section 2: Upcoming Events
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "2. Upcoming Events")
+    y -= 25
+    events = Event.objects.filter(date__gte=timezone.now()).order_by("date")[:10]
+    if not events:
+        c.setFont("Helvetica", 12)
+        c.drawString(70, y, "No upcoming events found.")
+        y -= 20
+    else:
+        for event in events:
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(70, y, f"- {event.name}")
+            y -= 12
+            c.setFont("Helvetica", 11)
+            c.drawString(90, y, f"Club: {event.club.name} | Date: {event.date.strftime('%Y-%m-%d')} | Attendees: {event.attendees.count()}")
+            y -= 20
+            if y < 100:
+                c.showPage()
+                y = height - 100
+
+    # Section 3: Active Polls
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "3. Active Polls")
+    y -= 25
+    polls = Poll.objects.all().order_by('-created_at')[:10]
+    if not polls.exists():
+        c.setFont("Helvetica", 12)
+        c.drawString(70, y, "No active polls found.")
+        y -= 20
+    else:
+        for poll in polls:
+            total_votes = sum(option.votes.count() for option in poll.options.all())
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(70, y, f"- {poll.question}")
+            y -= 12
+            c.setFont("Helvetica", 11)
+            c.drawString(90, y, f"Club: {poll.club.name} | Total Votes: {total_votes}")
+            y -= 20
+            if y < 100:
+                c.showPage()
+                y = height - 100
+
+    # Section 4: Recent Club Posts
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "4. Recent Club Posts")
+    y -= 25
+    posts = ClubPost.objects.all().order_by('-created_at')[:10]
+    if not posts.exists():
+        c.setFont("Helvetica", 12)
+        c.drawString(70, y, "No recent posts found.")
+        y -= 20
+    else:
+        for post in posts:
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(70, y, f"- {post.title}")
+            y -= 12
+            c.setFont("Helvetica", 11)
+            c.drawString(90, y, f"Club: {post.club.name} | Author: {post.author.username} | {post.created_at.strftime('%Y-%m-%d')}")
+            y -= 20
+            if y < 100:
+                c.showPage()
+                y = height - 100
+
+    # Footer
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(50, 50, "End of Report - Generated by School Clubs MS")
+
+    c.save()
+
+
+@login_required
+def generate_report(request):
+    """Triggered by admin to generate the School Clubs report asynchronously."""
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, "You are not authorized to generate reports.")
+        return redirect('admin_dashboard')
+
+    reports_dir = os.path.join(settings.MEDIA_ROOT, 'reports')
+    os.makedirs(reports_dir, exist_ok=True)
+
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"clubs_report_{timestamp}.pdf"
+    file_path = os.path.join(reports_dir, filename)
+
+    # Run in background thread
+    thread = threading.Thread(target=generate_report_file, args=(file_path,))
+    thread.start()
+
+    messages.success(request, "Report generation started. Please refresh in a few seconds to download.")
+    request.session['latest_report'] = filename
+    return redirect('admin_dashboard')
+
+
+@login_required
+def download_report(request):
+    """Allow admin to download the generated clubs report."""
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, "You are not authorized to download reports.")
+        return redirect('admin_dashboard')
+
+    filename = request.session.get('latest_report', None)
+    if not filename:
+        messages.error(request, "No recent report found. Please generate one first.")
+        return redirect('admin_dashboard')
+
+    file_path = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
+    if os.path.exists(file_path):
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=filename)
+
+    messages.error(request, "Report file not found.")
+    return redirect('admin_dashboard')
+
+@login_required
+def system_reports(request):
+    return render(request, 'users/system_reports.html')
+
+@login_required
+def admin_settings(request):
+    """Admin can manage system settings."""
+    if not hasattr(request.user, 'profile') or request.user.profile.role.lower() != 'admin':
+        messages.error(request, "You are not authorized to access system settings.")
+        return redirect('admin_dashboard')
+
+    # Example: settings stored in a dictionary (you can use a model for persistent settings)
+    system_settings = request.session.get('system_settings', {
+        'site_name': 'School Clubs MS',
+        'allow_registration': True,
+    })
+
+    if request.method == "POST":
+        site_name = request.POST.get('site_name')
+        allow_registration = request.POST.get('allow_registration') == 'on'
+
+        system_settings['site_name'] = site_name
+        system_settings['allow_registration'] = allow_registration
+
+        request.session['system_settings'] = system_settings
+        messages.success(request, "System settings updated successfully!")
+
+    context = {
+        'system_settings': system_settings
+    }
+    return render(request, 'users/admin_settings.html', context)

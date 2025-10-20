@@ -55,8 +55,8 @@
                     <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
                     <li><a href="{% url 'lecturer_add_mark' %}" class="active"><span class="nav-icon">📝</span> Add
                             Student Marks</a></li>
-                    <li><a href="#"><span class="nav-icon">📢</span> Announcements</a></li>
-                    <li><a href="#"><span class="nav-icon">📊</span> Reports</a></li>
+                    <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
+                    <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
                     {% elif user.profile.role == 'admin' %}
                     <!-- Admin Navigation -->
                     <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
@@ -64,8 +64,8 @@
                             Clubs</a></li>
                     <li><a href="{% url 'manage_users' %}"><span class="nav-icon">👥</span> Manage Users</a></li>
                     <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
-                    <li><a href="#"><span class="nav-icon">📊</span> System Reports</a></li>
-                    <li><a href="#"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    <li><a href="{% url 'system_reports' %}"><span class="nav-icon">📊</span> System Reports</a></li>
+                    <li><a href="{% url 'admin_settings' %}"><span class="nav-icon">⚙️</span> Settings</a></li>
                     {% endif %}
                     <li>
                         <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">

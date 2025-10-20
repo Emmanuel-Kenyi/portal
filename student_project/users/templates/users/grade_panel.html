@@ -5,152 +5,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Grades</title>
-    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+    <title>Student Dashboard - Grades | CLUB MS</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=4">
+
+    <style>
+        /* === General Reset === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        /* === Layout === */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* === Main Content === */
+        .dashboard-main {
+            flex: 1;
+            margin-left: 260px; /* Keep this if you still want space for the sidebar */
+            padding: 2rem;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            color: #002147;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .dashboard-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+
+        /* === Breadcrumb === */
+        .breadcrumb {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        .breadcrumb .separator {
+            margin: 0 0.5rem;
+        }
+
+        /* === Grades Panel === */
+        .grades-panel h2 {
+            color: #002147;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th, td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+        }
+
+        thead {
+            background-color: #002147;
+            color: #fff;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f4f6fa;
+        }
+
+        tbody tr:hover {
+            background-color: #eaf0fb;
+        }
+
+        .gpa-summary {
+            display: flex;
+            justify-content: space-between;
+            background: #f9f9f9;
+            border-left: 4px solid #fcd116;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #888;
+            font-size: 1rem;
+            padding: 2rem 0;
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-wrapper">
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-section">
-                <span class="logo-icon">🎓</span>
-                <span class="logo-text">CLUB MS</span>
+        <div>
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
             </div>
-        </div>
 
-        <div class="user-profile">
-            {% if user.profile.avatar %}
-                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
-            {% else %}
-                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
-            {% endif %}
-            <h3>{{ user.profile.name }}</h3>
-            <p class="sidebar-role">Student {{ user.profile.role|title }}</p>
-        </div>
+            <div class="user-profile">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+                {% else %}
+                    <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role">{{ user.profile.role|title }}</p>
+            </div>
 
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-                <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
-                <li><a href="{% url 'grade_panel' %}" class="scroll-to-panel"><span class="nav-icon">📈</span> Grades</a></li>
-                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
-                <li>
-                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="sidebar-link-btn">
-                            <span class="nav-icon">🚪</span> Logout
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </nav>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                    <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                    <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
+                    <li><a href="{% url 'grade_panel' %}" class="scroll-to-panel"><span class="nav-icon">📈</span> Grades</a></li>
+                    <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Feedback</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+        </div>
     </aside>
 
-    <!-- Main Dashboard Content -->
+    <!-- Main Dashboard -->
     <main class="dashboard-main">
         <header class="top-header">
             <div class="header-left">
                 <button class="menu-toggle">☰</button>
-                <h1 class="page-title">Student Dashboard - Grades</h1>
-            </div>
-            <div class="header-right">
-                <button class="settings-btn">⚙️</button>
+                <h1 class="page-title">My Grades & GPA</h1>
             </div>
         </header>
 
         <div class="dashboard-content">
-            <!-- Breadcrumb -->
             <div class="breadcrumb">
-                <span>Student</span>
-                <span class="separator">></span>
-                <span class="current">Grades</span>
+                <span>Student</span> <span class="separator">></span> <span class="current">Grades</span>
             </div>
 
-            <!-- Grades Panel -->
-            <section class="panel grades-panel" id="grades">
-                <div class="panel-header">
-                    <h2>My Grades & GPA</h2>
-                    <div class="panel-actions">
-                        <button class="panel-toggle">−</button>
-                        <button class="panel-close">✕</button>
-                    </div>
-                </div>
-                <div class="panel-body">
-                    {% if student_courses %}
-                    <div class="grades-table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Course</th>
-                                    <th>Marks</th>
-                                    <th>Grade</th>
-                                    <th>Grade Point</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for mark in student_courses %}
-                                <tr>
-                                    <td>{{ mark.course.name }}</td>
-                                    <td>{{ mark.marks }}</td>
-                                    <td>{{ mark.grade_letter }}</td>
-                                    <td>{{ mark.grade_point }}</td>
-                                    <td>{{ mark.remarks }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            <section class="grades-panel" id="grades">
+                {% if student_courses %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Marks</th>
+                                <th>Grade</th>
+                                <th>Grade Point</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mark in student_courses %}
+                            <tr>
+                                <td>{{ mark.course.name }}</td>
+                                <td>{{ mark.marks }}</td>
+                                <td>{{ mark.grade_letter }}</td>
+                                <td>{{ mark.grade_point }}</td>
+                                <td>{{ mark.remarks }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
                     <div class="gpa-summary">
                         <p><strong>GPA:</strong> {{ gpa }}</p>
                         <p><strong>CGPA:</strong> {{ cgpa }}</p>
                     </div>
-                    {% else %}
+                {% else %}
                     <div class="empty-state">
                         <p>No grades available yet.</p>
                     </div>
-                    {% endif %}
-                </div>
+                {% endif %}
             </section>
         </div>
     </main>
 </div>
 
 <script>
-// Panel toggle functionality
-document.querySelectorAll('.panel-toggle').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const panel = this.closest('.panel');
-        const body = panel.querySelector('.panel-body');
-        body.style.display = body.style.display === 'none' ? 'block' : 'none';
-        this.textContent = body.style.display === 'none' ? '+' : '−';
-    });
-});
-
-document.querySelectorAll('.panel-close').forEach(btn => {
-    btn.addEventListener('click', function() {
-        this.closest('.panel').style.display = 'none';
-    });
-});
-
-// Menu toggle for mobile
 document.querySelector('.menu-toggle')?.addEventListener('click', function() {
     document.querySelector('.sidebar').classList.toggle('sidebar-open');
-});
-
-// Smooth scroll to Grades panel
-document.querySelectorAll('.scroll-to-panel').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href').substring(1);
-        const target = document.getElementById(targetId);
-        target.scrollIntoView({ behavior: 'smooth' });
-    });
 });
 </script>
 </body>

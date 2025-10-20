@@ -35,8 +35,8 @@
                 <li><a href="{% url 'manage_clubs' %}"><span class="nav-icon">🏛</span> Manage Clubs</a></li>
                 <li><a href="{% url 'manage_users' %}"><span class="nav-icon">👥</span> Manage Users</a></li>
                 <li><a href="{% url 'manage_posts' %}" class="active"><span class="nav-icon">📝</span> Manage Posts</a></li>
-                <li><a href="#"><span class="nav-icon">📊</span> System Reports</a></li>
-                <li><a href="#"><span class="nav-icon">⚙️</span> Settings</a></li>
+                <li><a href="{% url 'system_reports' %}"><span class="nav-icon">📊</span> System Reports</a></li>
+                <li><a href="{% url 'admin_settings' %}"><span class="nav-icon">⚙️</span> Settings</a></li>
                 <li>
                     <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
                         {% csrf_token %}

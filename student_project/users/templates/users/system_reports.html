@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Reports</title>
+    <link rel="stylesheet" href="{% static 'css/lecturer_dashboard.css' %}?v=1">
+</head>
+
+<body>
+    <div class="dashboard-wrapper">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-section">
+                    <span class="logo-icon">🎓</span>
+                    <span class="logo-text">CLUB MS</span>
+                </div>
+            </div>
+
+            <div class="user-profile">
+                {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="{{ user.profile.name }}" class="sidebar-avatar">
+                {% else %}
+                <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
+                {% endif %}
+                <h3>{{ user.profile.name }}</h3>
+                <p class="sidebar-role" style="color: #e74c3c;">{{ user.profile.role|title }}</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="{% url 'manage_clubs' %}"><span class="nav-icon">🏛</span> Manage Clubs</a></li>
+                    <li><a href="{% url 'manage_users' %}"><span class="nav-icon">👥</span> Manage Users</a></li>
+                    <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
+                    <li><a href="{% url 'system_reports' %}" class="active"><span class="nav-icon">📊</span> System Reports</a></li>
+                    <li><a href="{% url 'admin_settings' %}"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    <li>
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link-btn">
+                                <span class="nav-icon">🚪</span> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <header class="top-header">
+                <h1 class="page-title">📊 System Reports</h1>
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+            </header>
+
+            <div class="dashboard-content">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2>Generate & Download Reports</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="dashboard-card admin-reports">
+                            <p>Generate the latest clubs report and download it as PDF.</p>
+
+                            <form action="{% url 'generate_report' %}" method="post" style="margin-bottom: 10px;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">Generate Report</button>
+                            </form>
+
+                            <form action="{% url 'download_report' %}" method="get">
+                                <button type="submit" class="btn btn-success">Download Latest Report</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Menu toggle for mobile
+        document.querySelector('.menu-toggle')?.addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('sidebar-open');
+        });
+    </script>
+</body>
+
+</html>

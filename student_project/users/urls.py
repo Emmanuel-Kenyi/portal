@@ -22,7 +22,7 @@ urlpatterns = [
     path('create-poll/', views.create_poll, name='create_poll'),
     path('announcements/', views.announcements, name='announcements'),
     path('reports/', views.reports, name='reports'),
-    
+
     # Award points
     path('award-points/<int:club_id>/', views.award_points, name='award_points'),
     path('my-points/', views.student_points_summary, name='student_points'),
@@ -35,12 +35,18 @@ urlpatterns = [
     # Post management
     path('manage-posts/', views.manage_posts, name='manage_posts'),
 
-    # -------------------------
-# Lecturer Add Student Marks
-# -------------------------
+    # Lecturer Add Student Marks
     path('dashboard/lecturer/add-marks/', views.lecturer_add_mark, name='lecturer_add_mark'),
     path('dashboard/lecturer/edit-mark/<int:mark_id>/', views.edit_mark, name='edit_mark'),
     path('dashboard/lecturer/delete-mark/<int:mark_id>/', views.delete_mark, name='delete_mark'),
     path('dashboard/student/grades/', views.grade_panel, name='grade_panel'),
+
+    # Reports
+    path('generate-report/', views.generate_report, name='generate_report'),
+    path('download-report/', views.download_report, name='download_report'),
+    path('system-reports/', views.system_reports, name='system_reports'),
+
+    # Admin Settings
+    path('dashboard/admin/settings/', views.admin_settings, name='admin_settings'),
 
 ]
