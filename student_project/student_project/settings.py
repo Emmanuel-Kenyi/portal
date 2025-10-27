@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Add dotenv support
@@ -15,10 +16,12 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 # SECURITY
-SECRET_KEY = 'django-insecure-l26k+rzl=)xeec4=wt&_w1$h$j%r%-!%^)86%ff(=fd!0dl+qj'
-DEBUG = True
-ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['clubs_mgt_system.onrender.com']
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = [h.strip() for h in config(
+    'ALLOWED_HOSTS',
+    default='clubs_mgt_system.onrender.com,127.0.0.1,localhost'
+).split(',')]
 
 
 # Application definition
