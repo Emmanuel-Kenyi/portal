@@ -18,6 +18,8 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 SECRET_KEY = 'django-insecure-l26k+rzl=)xeec4=wt&_w1$h$j%r%-!%^)86%ff(=fd!0dl+qj'
 DEBUG = True
 ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['clubs_mgt_system.onrender.com']
+
 
 # Application definition
 INSTALLED_APPS = [
