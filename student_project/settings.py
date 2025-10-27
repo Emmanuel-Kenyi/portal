@@ -18,11 +18,10 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS from environment, default includes Render domain
-ALLOWED_HOSTS = [h.strip() for h in config(
-    'ALLOWED_HOSTS',
-    default='clubs_mgt_system.onrender.com,127.0.0.1,localhost'
-).split(',')]
+
+
+
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # -----------------------------
 # SUPABASE
