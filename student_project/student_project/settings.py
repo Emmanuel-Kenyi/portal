@@ -2,29 +2,38 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from decouple import config
+import dj_database_url  # Optional if you use PostgreSQL on Render
 
+# -----------------------------
+# BASE DIRECTORY
+# -----------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Add dotenv support
+
+# Load .env variables
 load_dotenv(BASE_DIR / ".env")
 
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
+# -----------------------------
 # SECURITY
+# -----------------------------
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder')
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+# ALLOWED_HOSTS from environment, default includes Render domain
 ALLOWED_HOSTS = [h.strip() for h in config(
     'ALLOWED_HOSTS',
     default='clubs_mgt_system.onrender.com,127.0.0.1,localhost'
 ).split(',')]
 
+# -----------------------------
+# SUPABASE
+# -----------------------------
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-# Application definition
+# -----------------------------
+# INSTALLED APPS
+# -----------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -36,6 +45,9 @@ INSTALLED_APPS = [
     'users',
 ]
 
+# -----------------------------
+# MIDDLEWARE
+# -----------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -51,7 +63,7 @@ ROOT_URLCONF = 'student_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # Global templates folder
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -65,15 +77,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'student_project.wsgi.application'
 
-# Database
+# -----------------------------
+# DATABASE
+# -----------------------------
+# Use SQLite for local/dev, PostgreSQL in production if DATABASE_URL is provided
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600
+    )
 }
 
-# Password validation
+# -----------------------------
+# PASSWORD VALIDATION
+# -----------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -81,27 +98,34 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+# -----------------------------
+# INTERNATIONALIZATION
+# -----------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
-STATIC_URL = '/static/'                         # URL prefix
-STATICFILES_DIRS = [BASE_DIR / "static"]        # development static folder
-STATIC_ROOT = BASE_DIR / "staticfiles"          # collectstatic target for production
+# -----------------------------
+# STATIC FILES
+# -----------------------------
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]        # Dev
+STATIC_ROOT = BASE_DIR / "staticfiles"          # Production
 
-# Media files (for club logos)
+# -----------------------------
+# MEDIA FILES
+# -----------------------------
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
-
-# Default primary key field type
+# -----------------------------
+# DEFAULT PK
+# -----------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Login/Logout redirects
+# -----------------------------
+# LOGIN / LOGOUT
+# -----------------------------
 LOGIN_REDIRECT_URL = '/users/dashboard/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
-
-
