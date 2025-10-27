@@ -64,7 +64,7 @@ urlpatterns = [
 
     # saved reports / cloud endpoints (these are POST-only)
     path('reports/lecturer-save/', clubs_views.lecturer_save_report_cloud, name='lecturer_save_report_cloud'),
-    path('reports/admin-save/', clubs_views.admin_save_report_cloud, name='admin_save_report_cloud'),
+    path('reports/admin-save/', views.admin_save_report_cloud, name="admin_save_report_cloud"),
 
     # saved-reports listing
     path('reports/lecturer-saved/', clubs_views.lecturer_saved_reports, name='lecturer_saved_reports'),

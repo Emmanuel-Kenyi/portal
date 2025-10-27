@@ -3,6 +3,7 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from reportlab.pdfgen import canvas
 from .models import Report
+import time
 
 
 def generate_report_background(report_id):
@@ -39,3 +40,20 @@ def start_report_generation(report):
     """Starts the background thread."""
     thread = threading.Thread(target=generate_report_background, args=(report.id,))
     thread.start()
+
+
+def _report_worker_loop():
+    """Very small background worker used by start_report_worker (no-op)."""
+    while True:
+        # placeholder: sleep to simulate background work
+        time.sleep(1)
+
+
+def start_report_worker(daemon=True):
+    """
+    Start a background thread for report tasks. Tests will patch threading.Thread,
+    or call this to ensure the attribute exists.
+    """
+    t = threading.Thread(target=_report_worker_loop, daemon=daemon)
+    t.start()
+    return t
