@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from decouple import config
-import dj_database_url  # Optional if you use PostgreSQL on Render
+import dj_database_url
 
 # -----------------------------
 # BASE DIRECTORY
@@ -18,13 +18,16 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS from environment, default includes Render domain
-ALLOWED_HOSTS = [h.strip() for h in config(
-    'ALLOWED_HOSTS',
-    default='student-project-5d6h.onrender.com,127.0.0.1,localhost'
-).split(',')]
-
-
+# ALLOWED_HOSTS - Use Render's automatic hostname or environment variable
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, '127.0.0.1', 'localhost']
+else:
+    # Fallback to config or default
+    ALLOWED_HOSTS = [h.strip() for h in config(
+        'ALLOWED_HOSTS',
+        default='127.0.0.1,localhost'
+    ).split(',')]
 
 # -----------------------------
 # SUPABASE
