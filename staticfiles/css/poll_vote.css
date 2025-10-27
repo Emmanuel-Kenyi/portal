@@ -1,0 +1,573 @@
+/* Poll Vote Page CSS */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --sidebar-bg: #343a40;
+    --sidebar-text: #ffffff;
+    --sidebar-active: #007bff;
+    --main-bg: #ecf0f5;
+    --card-blue: #00c0ef;
+    --card-green: #00a65a;
+    --card-yellow: #f39c12;
+    --card-red: #dd4b39;
+    --panel-bg: #ffffff;
+    --text-dark: #333333;
+    --text-muted: #777777;
+    --border-color: #d2d6de;
+    --hover-bg: #f4f4f4;
+}
+
+body {
+    font-family: 'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--main-bg);
+    color: var(--text-dark);
+    font-size: 14px;
+}
+
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 230px;
+    background: var(--sidebar-bg);
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    overflow-y: auto;
+    transition: all 0.3s;
+}
+
+.sidebar-header {
+    padding: 15px;
+    background: #2c3136;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--sidebar-text);
+}
+
+.logo-icon {
+    font-size: 24px;
+}
+
+.logo-text {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.user-profile {
+    padding: 20px 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-profile h3 {
+    font-size: 16px;
+    color: var(--sidebar-text);
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.sidebar-role {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-nav {
+    padding: 10px 0;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+}
+
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.sidebar-nav a:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--sidebar-text);
+}
+
+.sidebar-nav a.active {
+    background: #1a1f24;
+    color: var(--sidebar-text);
+    border-left: 3px solid var(--sidebar-active);
+}
+
+.nav-icon {
+    margin-right: 10px;
+    font-size: 16px;
+}
+
+/* ===== MAIN CONTENT ===== */
+.dashboard-main {
+    margin-left: 230px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.top-header {
+    background: #ffffff;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-dark);
+    display: none;
+}
+
+.page-title {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-dark);
+}
+
+.header-right .btn-back {
+    padding: 8px 16px;
+    background: var(--card-blue);
+    color: white;
+    text-decoration: none;
+    border-radius: 3px;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+
+.header-right .btn-back:hover {
+    background: #00a7d0;
+}
+
+.dashboard-content {
+    padding: 20px;
+    flex: 1;
+}
+
+.breadcrumb {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.breadcrumb a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--sidebar-active);
+}
+
+.breadcrumb .separator {
+    margin: 0 8px;
+}
+
+.breadcrumb .current {
+    color: var(--text-dark);
+}
+
+/* ===== POLL CONTAINER ===== */
+.poll-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ===== POLL HEADER ===== */
+.poll-header {
+    background: linear-gradient(135deg, var(--card-red) 0%, #c23727 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 3px;
+    margin-bottom: 25px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.poll-icon {
+    font-size: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.poll-info {
+    flex: 1;
+}
+
+.club-badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.poll-question {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    line-height: 1.3;
+}
+
+.poll-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+    opacity: 0.95;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ===== POLL BODY ===== */
+.poll-body {
+    background: var(--panel-bg);
+    padding: 30px;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    margin-bottom: 25px;
+}
+
+/* ===== VOTING INSTRUCTIONS ===== */
+.voting-instructions {
+    background: #e8f4fd;
+    border-left: 4px solid var(--card-blue);
+    padding: 20px;
+    border-radius: 3px;
+    margin-bottom: 30px;
+}
+
+.voting-instructions h3 {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+}
+
+.voting-instructions ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.voting-instructions li {
+    font-size: 14px;
+    color: var(--text-dark);
+    padding: 6px 0;
+    padding-left: 25px;
+    position: relative;
+}
+
+.voting-instructions li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--card-blue);
+    font-weight: 700;
+}
+
+/* ===== OPTIONS CONTAINER ===== */
+.options-container {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.option-card {
+    background: var(--hover-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 3px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.option-card:hover {
+    background: white;
+    border-color: var(--card-red);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.option-card.selected {
+    background: #fff5f5;
+    border-color: var(--card-red);
+    box-shadow: 0 2px 8px rgba(221, 75, 57, 0.2);
+}
+
+.option-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.option-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.option-letter {
+    background: var(--card-red);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.option-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.option-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.option-stats {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.check-icon {
+    font-size: 24px;
+    color: var(--card-green);
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.option-card.selected .check-icon {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* ===== FORM ACTIONS ===== */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 3px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.btn-submit {
+    background: var(--card-red);
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #c23727;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(221, 75, 57, 0.3);
+}
+
+.btn-icon {
+    font-size: 18px;
+}
+
+.btn-cancel {
+    background: white;
+    color: var(--text-dark);
+    border: 2px solid var(--border-color);
+}
+
+.btn-cancel:hover {
+    border-color: var(--text-muted);
+    background: var(--hover-bg);
+}
+
+/* ===== POLL STATISTICS ===== */
+.poll-stats-section {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.poll-stats-section h3 {
+    font-size: 18px;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-box {
+    background: var(--hover-bg);
+    padding: 20px;
+    border-radius: 3px;
+    text-align: center;
+    border-top: 3px solid var(--card-red);
+}
+
+.stat-number {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .sidebar {
+        margin-left: -230px;
+    }
+    
+    .sidebar.sidebar-open {
+        margin-left: 0;
+    }
+    
+    .dashboard-main {
+        margin-left: 0;
+    }
+    
+    .menu-toggle {
+        display: block;
+    }
+    
+    .poll-header {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+    }
+    
+    .poll-icon {
+        width: 80px;
+        height: 80px;
+        font-size: 48px;
+    }
+    
+    .poll-question {
+        font-size: 22px;
+    }
+    
+    .poll-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .poll-body {
+        padding: 20px;
+    }
+    
+    .option-content {
+        gap: 10px;
+    }
+    
+    .option-letter {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    .option-text {
+        font-size: 14px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
