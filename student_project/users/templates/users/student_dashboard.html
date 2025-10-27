@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard</title>
-    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/student_dashboard.css' %}?v=4">
 </head>
 <body>
 <div class="dashboard-wrapper">
@@ -31,25 +31,25 @@
         </div>
 
         <nav class="sidebar-nav">
-    <ul>
-        <li><a href="{% url 'student_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Home</a></li>
-        <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
-        <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
-        <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
-        <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
-        <li><a href="{% url 'grade_panel' %}" class="scroll-to-panel"><span class="nav-icon">📈</span> Grades</a></li>
-        <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
-        <li>
-            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="sidebar-link-btn">
-                    <span class="nav-icon">🚪</span> Logout
-                </button>
-            </form>
-        </li>
-    </ul>
-</nav>
-
+            <ul>
+                <li><a href="{% url 'student_dashboard' %}" class="active"><span class="nav-icon">🏠</span> Home</a></li>
+                <li><a href="{% url 'club_list' %}"><span class="nav-icon">🏛</span> View Clubs</a></li>
+                <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
+                <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
+                <li><a href="{% url 'grade_panel' %}"><span class="nav-icon">📈</span> Grades</a></li>
+                <li><a href="#reports" class="scroll-to-reports"><span class="nav-icon">📄</span> Reports</a></li>
+                <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+                <li>
+                    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="sidebar-link-btn">
+                            <span class="nav-icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
     </aside>
 
     <!-- Main Dashboard Content -->
@@ -109,6 +109,94 @@
                     </div>
                     <div class="stat-icon">📊</div>
                     <a href="#polls" class="stat-link">More info →</a>
+                </div>
+            </section>
+
+            <!-- REPORTS SECTION - MODERN DESIGN -->
+            <section class="panel reports-panel" id="reports">
+                <div class="panel-header">
+                    <h2>📄 My Reports & Downloads</h2>
+                    <div class="panel-actions">
+                        <button class="panel-toggle">−</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <!-- Download Reports -->
+                    <div class="report-section-title">⬇️ Download Reports</div>
+                    <div class="reports-buttons">
+                        <a href="{% url 'download_my_clubs' %}" class="btn-modern btn-download">
+                            <div class="btn-icon">📚</div>
+                            <div class="btn-content">
+                                <span class="btn-label">My Clubs Report</span>
+                                <span class="btn-description">Download PDF</span>
+                            </div>
+                        </a>
+                        <a href="{% url 'download_my_events' %}" class="btn-modern btn-download">
+                            <div class="btn-icon">📅</div>
+                            <div class="btn-content">
+                                <span class="btn-label">My Events Report</span>
+                                <span class="btn-description">Download PDF</span>
+                            </div>
+                        </a>
+                        <a href="{% url 'download_my_grades' %}" class="btn-modern btn-download">
+                            <div class="btn-icon">📈</div>
+                            <div class="btn-content">
+                                <span class="btn-label">My Grades Report</span>
+                                <span class="btn-description">Download PDF</span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <!-- Save to Cloud -->
+                    <div class="report-section-title">☁️ Save to Cloud</div>
+                    <div class="reports-buttons">
+                        <button onclick="saveToCloud('clubs')" class="btn-modern btn-cloud">
+                            <div class="btn-icon">☁️</div>
+                            <div class="btn-content">
+                                <span class="btn-label">Save Clubs to Cloud</span>
+                                <span class="btn-description">Backup online</span>
+                            </div>
+                        </button>
+                        <button onclick="saveToCloud('events')" class="btn-modern btn-cloud">
+                            <div class="btn-icon">☁️</div>
+                            <div class="btn-content">
+                                <span class="btn-label">Save Events to Cloud</span>
+                                <span class="btn-description">Backup online</span>
+                            </div>
+                        </button>
+                        <button onclick="saveToCloud('grades')" class="btn-modern btn-cloud">
+                            <div class="btn-icon">☁️</div>
+                            <div class="btn-content">
+                                <span class="btn-label">Save Grades to Cloud</span>
+                                <span class="btn-description">Backup online</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- View Saved Reports -->
+                    <div class="report-section-title">📁 Saved Reports</div>
+                    <div class="reports-buttons">
+                        <a href="{% url 'my_saved_reports' %}" class="btn-modern btn-view-all">
+                            <div class="btn-icon">📁</div>
+                            <span class="btn-label">View All Saved Reports</span>
+                        </a>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="reports-stats-row">
+                        <div class="report-stat-item">
+                            <div class="report-stat-number">12</div>
+                            <div class="report-stat-label">Total Reports</div>
+                        </div>
+                        <div class="report-stat-item">
+                            <div class="report-stat-number">3</div>
+                            <div class="report-stat-label">Cloud Backups</div>
+                        </div>
+                        <div class="report-stat-item">
+                            <div class="report-stat-number">24h</div>
+                            <div class="report-stat-label">Last Updated</div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -318,7 +406,7 @@
 </div>
 
 <script>
-// Simple panel toggle functionality
+// Panel toggle functionality
 document.querySelectorAll('.panel-toggle').forEach(btn => {
     btn.addEventListener('click', function() {
         const panel = this.closest('.panel');
@@ -338,6 +426,44 @@ document.querySelectorAll('.panel-close').forEach(btn => {
 document.querySelector('.menu-toggle')?.addEventListener('click', function() {
     document.querySelector('.sidebar').classList.toggle('sidebar-open');
 });
+
+// Smooth scroll to reports
+document.querySelector('.scroll-to-reports')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelector('#reports')?.scrollIntoView({ behavior: 'smooth' });
+});
+
+// Save to Cloud function
+function saveToCloud(reportType) {
+    if (!confirm(`Save ${reportType} report to cloud storage?`)) return;
+    
+    // Show loading
+    const buttons = document.querySelectorAll('.btn-cloud');
+    buttons.forEach(btn => btn.disabled = true);
+    
+    fetch("{% url 'save_report_cloud' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `report_type=${reportType}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Report saved to cloud successfully!\n\nURL: ' + data.url);
+        } else {
+            alert('❌ Error: ' + (data.error || 'Failed to save report'));
+        }
+    })
+    .catch(error => {
+        alert('❌ Network error: ' + error.message);
+    })
+    .finally(() => {
+        buttons.forEach(btn => btn.disabled = false);
+    });
+}
 </script>
 </body>
 </html>

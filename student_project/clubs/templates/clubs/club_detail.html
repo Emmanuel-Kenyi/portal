@@ -33,8 +33,9 @@
                 <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="sidebar-avatar">
                 {% endif %}
                 <h3>{{ user.profile.name }}</h3>
-                <p class="sidebar-role" {% if user.profile.role=='admin' %}style="color: #e74c3c;" {% endif %}>{{
-                    user.profile.role|title }}</p>
+                <p class="sidebar-role" {% if user.profile.role == 'admin' %}style="color: #e74c3c;"{% endif %}>
+                    {{ user.profile.role|title }}
+                </p>
             </div>
 
             <nav class="sidebar-nav">
@@ -42,31 +43,32 @@
                     {% if user.profile.role == 'student' %}
                     <!-- Student Navigation -->
                     <li><a href="{% url 'student_dashboard' %}"><span class="nav-icon">🏠</span> Home</a></li>
-                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a>
-                    </li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
                     <li><a href="{% url 'my_activity' %}"><span class="nav-icon">📊</span> My Activity</a></li>
                     <li><a href="{% url 'events_list' %}"><span class="nav-icon">📅</span> Events</a></li>
+                    <li><a href="{% url 'student_points' %}"><span class="nav-icon">🏆</span> My Points</a></li>
+                    <li><a href="{% url 'grade_panel' %}"><span class="nav-icon">📈</span> Grades</a></li>
                     <li><a href="{% url 'send_feedback' %}"><span class="nav-icon">💬</span> Send Feedback</a></li>
+
                     {% elif user.profile.role == 'lecturer' %}
                     <!-- Lecturer Navigation -->
                     <li><a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
-                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a>
-                    </li>
+                    <li><a href="{% url 'club_list' %}" class="active"><span class="nav-icon">🏛</span> View Clubs</a></li>
                     <li><a href="{% url 'create_poll' %}"><span class="nav-icon">🗳️</span> Create Poll</a></li>
-                    <li><a href="{% url 'lecturer_add_mark' %}" class="active"><span class="nav-icon">📝</span> Add
-                            Student Marks</a></li>
+                    <li><a href="{% url 'lecturer_add_mark' %}" class="active"><span class="nav-icon">📝</span> Add Student Marks</a></li>
                     <li><a href="{% url 'announcements' %}"><span class="nav-icon">📢</span> Announcements</a></li>
                     <li><a href="{% url 'reports' %}"><span class="nav-icon">📊</span> Reports</a></li>
+
                     {% elif user.profile.role == 'admin' %}
                     <!-- Admin Navigation -->
                     <li><a href="{% url 'admin_dashboard' %}"><span class="nav-icon">🏠</span> Dashboard</a></li>
-                    <li><a href="{% url 'manage_clubs' %}" class="active"><span class="nav-icon">🏛</span> Manage
-                            Clubs</a></li>
+                    <li><a href="{% url 'manage_clubs' %}" class="active"><span class="nav-icon">🏛</span> Manage Clubs</a></li>
                     <li><a href="{% url 'manage_users' %}"><span class="nav-icon">👥</span> Manage Users</a></li>
                     <li><a href="{% url 'manage_posts' %}"><span class="nav-icon">📝</span> Manage Posts</a></li>
                     <li><a href="{% url 'system_reports' %}"><span class="nav-icon">📊</span> System Reports</a></li>
                     <li><a href="{% url 'admin_settings' %}"><span class="nav-icon">⚙️</span> Settings</a></li>
                     {% endif %}
+
                     <li>
                         <form id="logout-form" action="{% url 'logout' %}" method="post" style="display:inline;">
                             {% csrf_token %}
@@ -91,8 +93,7 @@
                     {% if user.profile.role == 'student' %}
                     <a href="{% url 'student_dashboard' %}" class="btn-back">← Back to Dashboard</a>
                     {% elif user.profile.role == 'lecturer' %}
-                    <a href="{% url 'award_points' club.id %}" class="btn btn-success" style="margin-right: 10px;">🏆
-                        Award Points</a>
+                    <a href="{% url 'award_points' club.id %}" class="btn btn-success" style="margin-right: 10px;">🏆 Award Points</a>
                     <a href="{% url 'lecturer_dashboard' %}" class="btn-back">← Back to Dashboard</a>
                     {% elif user.profile.role == 'admin' %}
                     <a href="{% url 'admin_dashboard' %}" class="btn-back">← Back to Dashboard</a>
@@ -101,6 +102,7 @@
             </header>
 
             <div class="dashboard-content">
+
                 <!-- Breadcrumb -->
                 <div class="breadcrumb">
                     {% if user.profile.role == 'student' %}
@@ -116,7 +118,7 @@
                     <span class="current">{{ club.name }}</span>
                 </div>
 
-                <!-- Club Header Section -->
+                <!-- Club Header -->
                 <section class="club-header-card">
                     <div class="club-header-content">
                         <div class="club-icon-large">🏛</div>
@@ -124,18 +126,13 @@
                             <h1>{{ club.name }}</h1>
                             <p class="club-description">{{ club.description }}</p>
                             <div class="club-stats">
-                                <span class="stat-item">
-                                    <strong>{{ club.members.count }}</strong> Members
-                                </span>
-                                <span class="stat-item">
-                                    <strong>{{ posts.count }}</strong> Posts
-                                </span>
-                                <span class="stat-item">
-                                    <strong>{{ events.count }}</strong> Events
-                                </span>
+                                <span class="stat-item"><strong>{{ club.members.count }}</strong> Members</span>
+                                <span class="stat-item"><strong>{{ posts.count }}</strong> Posts</span>
+                                <span class="stat-item"><strong>{{ events.count }}</strong> Events</span>
                             </div>
                         </div>
                     </div>
+
                     {% if user.profile.role == 'student' %}
                     <div class="club-actions">
                         <form method="post" action="{% url 'toggle_membership' club.id %}">
@@ -149,217 +146,200 @@
                     </div>
                     {% elif user.profile.role == 'admin' %}
                     <div class="club-actions">
-                        <a href="{% url 'manage_clubs' %}" class="btn btn-primary" style="background: #e74c3c;">Manage
-                            Clubs</a>
+                        <a href="{% url 'manage_clubs' %}" class="btn btn-primary" style="background: #e74c3c;">Manage Clubs</a>
                     </div>
                     {% endif %}
                 </section>
 
-                <!-- Main Content Grid -->
-                <div class="content-sections">
-
-                    <!-- Announcements Section -->
-                    <section class="panel announcements-panel">
-                        <div class="panel-header">
-                            <h2>📢 Announcements</h2>
-                            <div class="panel-actions">
-                                {% if user.profile.role == 'student' and user in club.members.all %}
-                                <a href="{% url 'new_post' club.id %}" class="btn btn-add">+ Add Post</a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="panel-body">
-                            {% if posts %}
-                            <div class="posts-container">
-                                {% for post in posts %}
-                                <article class="post-item">
-                                    <div class="post-header">
-                                        <h3>{{ post.title }}</h3>
-                                        <span class="post-date">{{ post.created_at|date:"M d, Y" }}</span>
-                                    </div>
-                                    <p class="post-content">{{ post.content }}</p>
-                                    <div class="post-footer">
-                                        <span class="post-author">
-                                            <strong>By:</strong> {{ post.author.username }}
-                                        </span>
-                                        {% if user.profile.role == 'admin' %}
-                                        <a href="{% url 'delete_post' post.id %}"
-                                            style="color: #e74c3c; text-decoration: none; font-weight: bold; margin-left: 15px;"
-                                            onclick="return confirm('Are you sure you want to delete this post?')">🗑️
-                                            Delete</a>
-                                        {% endif %}
-                                    </div>
-                                </article>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <div class="empty-state">
-                                <p>No announcements yet.</p>
-                                {% if user.profile.role == 'student' and user in club.members.all %}
-                                <a href="{% url 'new_post' club.id %}" class="btn btn-primary">Create First Post</a>
-                                {% endif %}
-                            </div>
+                <!-- Announcements -->
+                <section class="panel announcements-panel">
+                    <div class="panel-header">
+                        <h2>📢 Announcements</h2>
+                        <div class="panel-actions">
+                            {% if user.profile.role == 'student' and user in club.members.all %}
+                            <a href="{% url 'new_post' club.id %}" class="btn btn-add">+ Add Post</a>
                             {% endif %}
                         </div>
-                    </section>
-
-                    <!-- Polls Section -->
-                    <section class="panel polls-panel">
-                        <div class="panel-header">
-                            <h2>📊 Active Polls</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if posts %}
+                        <div class="posts-container">
+                            {% for post in posts %}
+                            <article class="post-item">
+                                <div class="post-header">
+                                    <h3>{{ post.title }}</h3>
+                                    <span class="post-date">{{ post.created_at|date:"M d, Y" }}</span>
+                                </div>
+                                <p class="post-content">{{ post.content }}</p>
+                                <div class="post-footer">
+                                    <span class="post-author"><strong>By:</strong> {{ post.author.username }}</span>
+                                    {% if user.profile.role == 'admin' %}
+                                    <a href="{% url 'delete_post' post.id %}" style="color: #e74c3c; text-decoration: none; font-weight: bold; margin-left: 15px;" onclick="return confirm('Are you sure you want to delete this post?')">🗑️ Delete</a>
+                                    {% endif %}
+                                </div>
+                            </article>
+                            {% endfor %}
                         </div>
-                        <div class="panel-body">
-                            {% if polls %}
-                            <div class="polls-container">
-                                {% for poll in polls %}
-                                <div class="poll-item">
-                                    <h3>{{ poll.question }}</h3>
-                                    {% if user.profile.role == 'student' %}
-                                    <form method="post" action="{% url 'vote_poll' poll.id %}" class="poll-form">
-                                        {% csrf_token %}
-                                        <div class="poll-options">
-                                            {% for option in poll.options.all %}
-                                            <label class="poll-option">
-                                                <input type="radio" name="option" value="{{ option.id }}">
-                                                <span class="option-text">{{ option.text }}</span>
-                                                <span class="option-votes">({{ option.vote_count }} votes)</span>
-                                            </label>
-                                            {% endfor %}
-                                        </div>
-                                        <button type="submit" class="btn btn-vote">Cast Vote</button>
-                                    </form>
-                                    {% else %}
-                                    <!-- Lecturer/Admin view: Show results only -->
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No announcements yet.</p>
+                            {% if user.profile.role == 'student' and user in club.members.all %}
+                            <a href="{% url 'new_post' club.id %}" class="btn btn-primary">Create First Post</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Polls -->
+                <section class="panel polls-panel">
+                    <div class="panel-header">
+                        <h2>📊 Active Polls</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if polls %}
+                        <div class="polls-container">
+                            {% for poll in polls %}
+                            <div class="poll-item">
+                                <h3>{{ poll.question }}</h3>
+                                {% if user.profile.role == 'student' %}
+                                <form method="post" action="{% url 'vote_poll' poll.id %}" class="poll-form">
+                                    {% csrf_token %}
                                     <div class="poll-options">
                                         {% for option in poll.options.all %}
-                                        <div class="poll-option">
+                                        <label class="poll-option">
+                                            <input type="radio" name="option" value="{{ option.id }}">
                                             <span class="option-text">{{ option.text }}</span>
                                             <span class="option-votes">({{ option.vote_count }} votes)</span>
-                                        </div>
+                                        </label>
                                         {% endfor %}
                                     </div>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            <div class="empty-state">
-                                <p>No active polls at the moment.</p>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </section>
-
-                    <!-- Events Section -->
-                    <section class="panel events-panel">
-                        <div class="panel-header">
-                            <h2>📅 Upcoming Events</h2>
-                        </div>
-                        <div class="panel-body">
-                            {% if events %}
-                            <div class="events-table-wrapper">
-                                <table class="events-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Event Name</th>
-                                            <th>Location</th>
-                                            <th>Attendees</th>
-                                            {% if user.profile.role == 'student' %}
-                                            <th>Action</th>
-                                            {% endif %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for event in events %}
-                                        <tr>
-                                            <td>
-                                                <div class="event-date-cell">
-                                                    <span class="date-day">{{ event.date|date:"d" }}</span>
-                                                    <span class="date-month">{{ event.date|date:"M" }}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <strong>{{ event.title }}</strong>
-                                                <p class="event-desc">{{ event.description|truncatewords:15 }}</p>
-                                            </td>
-                                            <td>{{ event.location }}</td>
-                                            <td>{{ event.attendees.count }}</td>
-                                            {% if user.profile.role == 'student' %}
-                                            <td>
-                                                {% if user in event.attendees.all %}
-                                                <span class="badge badge-going">✓ Going</span>
-                                                <form method="post" action="{% url 'rsvp_event' event.id %}"
-                                                    style="display:inline;">
-                                                    {% csrf_token %}
-                                                    <button type="submit"
-                                                        class="btn btn-small btn-danger">Cancel</button>
-                                                </form>
-                                                {% else %}
-                                                <form method="post" action="{% url 'rsvp_event' event.id %}">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-small btn-rsvp">RSVP</button>
-                                                </form>
-                                                {% endif %}
-                                            </td>
-                                            {% endif %}
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {% else %}
-                            <div class="empty-state">
-                                <p>No upcoming events scheduled.</p>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </section>
-
-                    <!-- Members Section -->
-                    <section class="panel members-panel">
-                        <div class="panel-header">
-                            <h2>👥 Club Members</h2>
-                        </div>
-                        <div class="panel-body">
-                            {% if club.members.all %}
-                            <div class="members-grid">
-                                {% for member in club.members.all %}
-                                <div class="member-card">
-                                    {% if member.profile.avatar %}
-                                    <img src="{{ member.profile.avatar.url }}" alt="{{ member.profile.name }}"
-                                        class="member-avatar">
-                                    {% else %}
-                                    <div class="member-avatar-placeholder">
-                                        {{ member.profile.name|first|upper }}
+                                    <button type="submit" class="btn btn-vote">Cast Vote</button>
+                                </form>
+                                {% else %}
+                                <div class="poll-options">
+                                    {% for option in poll.options.all %}
+                                    <div class="poll-option">
+                                        <span class="option-text">{{ option.text }}</span>
+                                        <span class="option-votes">({{ option.vote_count }} votes)</span>
                                     </div>
-                                    {% endif %}
-                                    <div class="member-info">
-                                        <strong>{{ member.profile.name }}</strong>
-                                        <small>{{ member.email }}</small>
-                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
+                                {% endif %}
                             </div>
-                            {% else %}
-                            <div class="empty-state">
-                                <p>No members yet.</p>
-                            </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
-                    </section>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No active polls at the moment.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
 
-                </div>
+                <!-- Events -->
+                <section class="panel events-panel">
+                    <div class="panel-header">
+                        <h2>📅 Upcoming Events</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if events %}
+                        <div class="events-table-wrapper">
+                            <table class="events-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event Name</th>
+                                        <th>Location</th>
+                                        <th>Attendees</th>
+                                        {% if user.profile.role == 'student' %}
+                                        <th>Action</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for event in events %}
+                                    <tr>
+                                        <td>
+                                            <div class="event-date-cell">
+                                                <span class="date-day">{{ event.date|date:"d" }}</span>
+                                                <span class="date-month">{{ event.date|date:"M" }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>{{ event.title }}</strong>
+                                            <p class="event-desc">{{ event.description|truncatewords:15 }}</p>
+                                        </td>
+                                        <td>{{ event.location }}</td>
+                                        <td>{{ event.attendees.count }}</td>
+                                        {% if user.profile.role == 'student' %}
+                                        <td>
+                                            {% if user in event.attendees.all %}
+                                            <span class="badge badge-going">✓ Going</span>
+                                            <form method="post" action="{% url 'rsvp_event' event.id %}" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-small btn-danger">Cancel</button>
+                                            </form>
+                                            {% else %}
+                                            <form method="post" action="{% url 'rsvp_event' event.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-small btn-rsvp">RSVP</button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No upcoming events scheduled.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Members -->
+                <section class="panel members-panel">
+                    <div class="panel-header">
+                        <h2>👥 Club Members</h2>
+                    </div>
+                    <div class="panel-body">
+                        {% if club.members.all %}
+                        <div class="members-grid">
+                            {% for member in club.members.all %}
+                            <div class="member-card">
+                                {% if member.profile.avatar %}
+                                <img src="{{ member.profile.avatar.url }}" alt="{{ member.profile.name }}" class="member-avatar">
+                                {% else %}
+                                <div class="member-avatar-placeholder">
+                                    {{ member.profile.name|first|upper }}
+                                </div>
+                                {% endif %}
+                                <div class="member-info">
+                                    <strong>{{ member.profile.name }}</strong>
+                                    <small>{{ member.email }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <p>No members yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
             </div>
         </main>
     </div>
 
     <script>
-        // Menu toggle for mobile
         document.querySelector('.menu-toggle')?.addEventListener('click', function () {
             document.querySelector('.sidebar').classList.toggle('sidebar-open');
         });
     </script>
 </body>
-
 </html>

@@ -457,6 +457,10 @@ body {
     border-top-color: var(--card-red);
 }
 
+.grades-panel {
+    border-top-color: #f39c12;
+}
+
 .panel-header {
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
@@ -790,6 +794,51 @@ body {
     margin-bottom: 10px;
 }
 
+/* ===== GRADES ===== */
+.grades-table {
+    overflow-x: auto;
+}
+
+.grades-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.grades-table th {
+    background: var(--hover-bg);
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-dark);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.grades-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
+.grades-table tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+.gpa-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--hover-bg);
+    border-radius: 3px;
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.gpa-summary p {
+    font-size: 16px;
+    color: var(--text-dark);
+}
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;
@@ -812,6 +861,225 @@ body {
     font-size: 24px;
     color: var(--text-dark);
     margin-bottom: 10px;
+}
+
+/* ===== MODERN REPORTS PANEL STYLES ===== */
+.reports-panel {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-top: none !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.reports-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 0%; }
+    50% { background-position: 100% 0%; }
+}
+
+.reports-panel .panel-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reports-panel .panel-header h2 {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.reports-panel .panel-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.reports-panel .panel-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.report-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 35px 0 20px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.report-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.reports-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.btn-modern {
+    padding: 16px 20px;
+    text-align: left;
+    border-radius: 12px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-modern:hover::before {
+    left: 100%;
+}
+
+.btn-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.btn-download {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-download:hover {
+    background: linear-gradient(135deg, #7c8ff5 0%, #8b5ab8 100%);
+}
+
+.btn-cloud {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.btn-cloud:hover {
+    background: linear-gradient(135deg, #5cd08f 0%, #48bb78 100%);
+}
+
+.btn-view-all {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    grid-column: 1 / -1;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.btn-view-all:hover {
+    background: linear-gradient(135deg, #f5a4ff 0%, #ff6b7f 100%);
+}
+
+.btn-icon {
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.btn-content {
+    flex: 1;
+}
+
+.btn-label {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.btn-description {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+    font-weight: 400;
+}
+
+.reports-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.report-stat-item {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.report-stat-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: scale(1.02);
+}
+
+.report-stat-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 8px;
+}
+
+.report-stat-label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-modern:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 /* ===== RESPONSIVE ===== */
@@ -873,5 +1141,21 @@ body {
         width: 100%;
         flex-direction: row;
         justify-content: space-between;
+    }
+
+    .reports-panel .panel-header h2 {
+        font-size: 22px;
+    }
+
+    .reports-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-modern {
+        padding: 20px;
+    }
+
+    .reports-stats-row {
+        grid-template-columns: 1fr;
     }
 }

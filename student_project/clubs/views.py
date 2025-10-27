@@ -2,11 +2,35 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
-from django.db.models import Count, Q  # Added Q import here
+from django.db.models import Count, Q, Avg  
 from django.contrib import messages
 from datetime import timedelta
 from .models import Club, ClubPost, Poll, PollOption, Event
 from .forms import ClubPostForm
+from django.http import HttpResponse, JsonResponse
+from datetime import datetime
+from clubs.reports import (
+    generate_my_clubs_report,
+    generate_my_events_report,
+    generate_my_grades_report,
+    upload_to_supabase,
+    get_my_reports
+)
+
+# Import for PDF generation
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from io import BytesIO
+import csv
+from django.views.decorators.http import require_http_methods
+import os
+from django.http import FileResponse
+from django.conf import settings
+from django.contrib.auth.models import User
 
 # -------------------------
 # ROLE CHECKS
@@ -21,6 +45,10 @@ def is_lecturer(user):
 
 def is_student(user):
     return hasattr(user, "profile") and user.profile.role == "student"
+
+# new helper: allow admin OR lecturer
+def is_admin_or_lecturer(user):
+    return hasattr(user, "profile") and getattr(user.profile, "role", "") in ("admin", "lecturer")
 
 
 # -------------------------
@@ -125,6 +153,7 @@ def lecturer_dashboard(request):
         'total_students': total_students,
         'active_polls_count': active_polls_count,
         'upcoming_events_count': upcoming_events_count,
+        'role': getattr(user, 'profile', None).role if hasattr(user, 'profile') else '',
     }
     
     return render(request, 'users/lecturer_dashboard.html', context)
@@ -346,12 +375,14 @@ def rsvp_event(request, event_id):
     """RSVP to an event"""
     event = get_object_or_404(Event, id=event_id)
     
+    event_label = getattr(event, 'title', None) or getattr(event, 'name', 'Event')
+    
     if request.user in event.attendees.all():
         event.attendees.remove(request.user)
-        messages.success(request, f'You have cancelled your RSVP to {event.title}.')
+        messages.success(request, f'You have cancelled your RSVP to {event_label}.')
     else:
         event.attendees.add(request.user)
-        messages.success(request, f'You have RSVP\'d to {event.title}!')
+        messages.success(request, f'You have RSVP\'d to {event_label}!')
     
     # Redirect based on 'next' parameter
     next_url = request.GET.get('next', 'club_detail')
@@ -492,3 +523,801 @@ def create_club(request):
 
     return render(request, "clubs/create_club.html", {"form": form})
 
+
+# ============================================
+# STUDENT REPORTS - CSV DOWNLOADS
+# ============================================
+
+@login_required
+def download_my_clubs(request):
+    """Download my clubs as CSV"""
+    csv_data = generate_my_clubs_report(request.user)
+    
+    response = HttpResponse(csv_data, content_type='text/csv')
+    filename = f"my_clubs_{datetime.now().strftime('%Y%m%d')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
+@login_required
+def download_my_events(request):
+    """Download my events as CSV"""
+    csv_data = generate_my_events_report(request.user)
+    
+    response = HttpResponse(csv_data, content_type='text/csv')
+    filename = f"my_events_{datetime.now().strftime('%Y%m%d')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
+@login_required
+def download_my_grades(request):
+    """Download my grades as CSV"""
+    csv_data = generate_my_grades_report(request.user)
+    
+    response = HttpResponse(csv_data, content_type='text/csv')
+    filename = f"my_grades_{datetime.now().strftime('%Y%m%d')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_report_cloud(request):
+    """Save student report to Supabase"""
+    report_type = request.POST.get('report_type', 'clubs')
+    
+    # Generate report
+    if report_type == 'clubs':
+        csv_data = generate_my_clubs_report(request.user)
+    elif report_type == 'events':
+        csv_data = generate_my_events_report(request.user)
+    elif report_type == 'grades':
+        csv_data = generate_my_grades_report(request.user)
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid report type'}, status=400)
+    
+    # Upload to Supabase
+    filename = f"student_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    result = upload_to_supabase(csv_data, filename, request.user.id)
+    
+    return JsonResponse(result)
+
+
+@login_required
+def my_saved_reports(request):
+    """View all saved reports for student"""
+    reports = get_my_reports(request.user.id)
+    
+    return render(request, 'clubs/my_reports.html', {
+        'reports': reports
+    })
+
+
+# ============================================
+# LECTURER REPORTS - PDF DOWNLOADS
+# ============================================
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_clubs_report(request):
+    """Generate and download all clubs report as PDF"""
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="clubs_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    # Title
+    elements.append(Paragraph("All Clubs Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Get clubs data
+    clubs = Club.objects.annotate(
+        member_count=Count('members'),
+        event_count=Count('events')
+    ).order_by('name')
+    
+    # Create table data
+    data = [['Club Name', 'Members', 'Events', 'Description']]
+    for club in clubs:
+        desc = club.description[:50] + '...' if len(club.description) > 50 else club.description
+        data.append([
+            club.name,
+            str(club.member_count),
+            str(club.event_count),
+            desc
+        ])
+    
+    # Create table
+    table = Table(data, colWidths=[2*inch, 1*inch, 1*inch, 3*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(f"<b>Total Clubs:</b> {clubs.count()}", styles['Normal']))
+    
+    # Build PDF
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_students_report(request):
+    """Generate and download students report as PDF"""
+    from django.contrib.auth.models import User
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="students_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    elements.append(Paragraph("Students Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Get students data
+    students = User.objects.filter(profile__role='student').annotate(
+        club_count=Count('clubs')
+    ).order_by('profile__name')
+    
+    # Create table data
+    data = [['Student Name', 'Email', 'Clubs Joined', 'Reg. Number']]
+    for student in students:
+        reg_num = getattr(student.profile, 'registration_number', 'N/A')
+        data.append([
+            student.profile.name,
+            student.email,
+            str(student.club_count),
+            reg_num
+        ])
+    
+    table = Table(data, colWidths=[2*inch, 2*inch, 1.5*inch, 1.5*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(f"<b>Total Students:</b> {students.count()}", styles['Normal']))
+    
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_events_report(request):
+    """Generate and download events report as PDF"""
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="events_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    elements.append(Paragraph("Events Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Get events data
+    events = Event.objects.annotate(
+        attendee_count=Count('attendees')
+    ).order_by('-date')
+    
+    # Create table data
+    data = [['Event Title', 'Club', 'Date', 'Location', 'Attendees']]
+    for event in events:
+        data.append([
+            event.title,
+            event.club.name,
+            event.date.strftime('%Y-%m-%d'),
+            event.location[:30],
+            str(event.attendee_count)
+        ])
+    
+    table = Table(data, colWidths=[2*inch, 1.5*inch, 1*inch, 2*inch, 1*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(f"<b>Total Events:</b> {events.count()}", styles['Normal']))
+    
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_polls_report(request):
+    """Generate and download polls report as PDF"""
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="polls_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    elements.append(Paragraph("Polls Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Get polls data
+    polls = Poll.objects.annotate(
+        vote_count=Count('options__votes')
+    ).order_by('-created_at')
+    
+    # Create table data
+    data = [['Question', 'Club', 'Total Votes', 'Status', 'Created']]
+    for poll in polls:
+        status = 'Active' if getattr(poll, 'is_active', True) else 'Closed'
+        question = poll.question[:40] + '...' if len(poll.question) > 40 else poll.question
+        data.append([
+            question,
+            poll.club.name,
+            str(poll.vote_count),
+            status,
+            poll.created_at.strftime('%Y-%m-%d')
+        ])
+    
+    table = Table(data, colWidths=[2.5*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(f"<b>Total Polls:</b> {polls.count()}", styles['Normal']))
+    
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_grades_report(request):
+    """Generate and download grades report as PDF"""
+    from django.contrib.auth.models import User
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="grades_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+
+    elements.append(Paragraph("Student Grades Report", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Try to find StudentMark model
+    StudentMark = None
+    try:
+        from .models import StudentMark
+        StudentMark = StudentMark
+    except Exception:
+        StudentMark = None
+
+    if StudentMark is None:
+        try:
+            from users.models import StudentMark as UM
+            StudentMark = UM
+        except Exception:
+            StudentMark = None
+
+    # If no StudentMark model found, show message
+    if StudentMark is None:
+        elements.append(Paragraph(
+            "<b>Grades Module Not Available</b>",
+            styles['Heading2']
+        ))
+        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Paragraph(
+            "The student grades functionality has not been configured yet. Please set up the StudentMark model to enable grades reporting.",
+            styles['Normal']
+        ))
+    else:
+        # Get students with grades
+        students = User.objects.filter(profile__role='student')
+        has_data = False
+
+        for student in students[:20]:
+            marks = StudentMark.objects.filter(student=student)
+            if marks.exists():
+                has_data = True
+                elements.append(Paragraph(f"<b>{getattr(student.profile, 'name', student.username)}</b>", styles['Heading3']))
+
+                data = [['Course', 'Marks', 'Grade', 'Grade Point']]
+                for mark in marks:
+                    data.append([
+                        getattr(getattr(mark, 'course', None), 'name', 'N/A'),
+                        str(getattr(mark, 'marks', 'N/A')),
+                        getattr(mark, 'grade_letter', 'N/A'),
+                        str(getattr(mark, 'grade_point', 'N/A'))
+                    ])
+
+                # Calculate GPA
+                try:
+                    avg_gpa = marks.aggregate(Avg('grade_point'))['grade_point__avg']
+                    data.append(['', '', 'GPA:', f"{avg_gpa:.2f}" if avg_gpa else 'N/A'])
+                except Exception:
+                    data.append(['', '', 'GPA:', 'N/A'])
+
+                table = Table(data, colWidths=[3*inch, 1*inch, 1*inch, 1*inch])
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('BACKGROUND', (0, -1), (-1, -1), colors.lightyellow),
+                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold')
+                ]))
+
+                elements.append(table)
+                elements.append(Spacer(1, 0.2*inch))
+
+        if not has_data:
+            elements.append(Paragraph(
+                "<b>No grades data available yet.</b>",
+                styles['Heading2']
+            ))
+            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Paragraph(
+                "Grades will appear here once lecturers have entered student marks.",
+                styles['Normal']
+            ))
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)   # was is_lecturer
+def download_engagement_report(request):
+    """Generate and download student engagement analytics report as PDF"""
+    from django.contrib.auth.models import User
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="engagement_report_{datetime.now().strftime("%Y%m%d")}.pdf"'
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2c3e50'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    elements.append(Paragraph("Student Engagement Analytics", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}", styles['Normal']))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary statistics
+    total_students = User.objects.filter(profile__role='student').count()
+    total_clubs = Club.objects.count()
+    total_events = Event.objects.count()
+    total_polls = Poll.objects.count()
+    total_posts = ClubPost.objects.count()
+    
+    # Calculate average clubs per student
+    clubs_with_members = Club.objects.annotate(mc=Count('members'))
+    avg_members = clubs_with_members.aggregate(Avg('mc'))['mc__avg'] or 0
+    
+    # Calculate average attendance
+    events_with_attendees = Event.objects.annotate(ac=Count('attendees'))
+    avg_attendance = events_with_attendees.aggregate(Avg('ac'))['ac__avg'] or 0
+    
+    summary_data = [
+        ['Metric', 'Count'],
+        ['Total Students', str(total_students)],
+        ['Total Clubs', str(total_clubs)],
+        ['Total Events', str(total_events)],
+        ['Total Polls', str(total_polls)],
+        ['Total Posts', str(total_posts)],
+        ['Avg Members/Club', f"{avg_members:.1f}"],
+        ['Avg Event Attendance', f"{avg_attendance:.1f}"],
+    ]
+    
+    table = Table(summary_data, colWidths=[4*inch, 2*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('FONTSIZE', (0, 0), (-1, -1), 11)
+    ]))
+    
+    elements.append(Paragraph("<b>System Overview</b>", styles['Heading2']))
+    elements.append(Spacer(1, 0.1*inch))
+    elements.append(table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Most active clubs
+    elements.append(Paragraph("<b>Most Active Clubs (by posts)</b>", styles['Heading2']))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    active_clubs = Club.objects.annotate(
+        post_count=Count('posts')
+    ).order_by('-post_count')[:10]
+    
+    club_data = [['Club Name', 'Posts', 'Members', 'Events']]
+    for club in active_clubs:
+        club_data.append([
+            club.name,
+            str(club.post_count),
+            str(club.members.count()),
+            str(club.events.count())
+        ])
+    
+    club_table = Table(club_data, colWidths=[3*inch, 1*inch, 1*inch, 1*inch])
+    club_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige)
+    ]))
+    
+    elements.append(club_table)
+    
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response.write(pdf)
+    
+    return response
+
+
+# ============================================
+# LECTURER CLOUD SAVE & MANAGEMENT
+# ============================================
+
+@login_required
+@user_passes_test(is_lecturer)
+@require_http_methods(["POST"])
+def lecturer_save_report_cloud(request):
+    """Save lecturer report to cloud storage (Supabase)"""
+    
+    report_type = request.POST.get('report_type')
+    
+    if not report_type:
+        return JsonResponse({'success': False, 'error': 'Report type is required'}, status=400)
+    
+    try:
+        # Generate a unique filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"lecturer_{report_type}_report_{timestamp}.pdf"
+        
+        # Generate the appropriate report content
+        # In a real implementation, you would generate the actual PDF here
+        # For now, we'll simulate with metadata
+        
+        # Upload to Supabase (you already have this function)
+        result = upload_to_supabase(
+            f"Lecturer {report_type} report data",  # Replace with actual PDF data
+            filename, 
+            request.user.id
+        )
+        
+        if result.get('success'):
+            return JsonResponse({
+                'success': True,
+                'url': result.get('url', f'https://cloud-storage.example.com/reports/{filename}'),
+                'filename': filename,
+                'report_type': report_type,
+                'timestamp': timestamp
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': result.get('error', 'Failed to upload to cloud')
+            }, status=500)
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@user_passes_test(is_lecturer)
+def lecturer_saved_reports(request):
+    """View all saved reports for lecturer"""
+    
+    # Fetch saved reports from Supabase or database
+    reports = get_my_reports(request.user.id)
+    
+    # Add mock data if no reports exist
+    if not reports:
+        reports = [
+            {
+                'name': 'Clubs Report',
+                'date': datetime.now().strftime('%Y-%m-%d'),
+                'size': '2.4 MB',
+                'type': 'clubs',
+                'url': '#'
+            },
+            {
+                'name': 'Students Report',
+                'date': datetime.now().strftime('%Y-%m-%d'),
+                'size': '1.8 MB',
+                'type': 'students',
+                'url': '#'
+            },
+        ]
+    
+    context = {
+        'saved_reports': reports,
+        'total_reports': len(reports),
+    }
+    
+    return render(request, 'clubs/lecturer_saved_reports.html', context)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_saved_reports(request):
+    """Admin: view saved reports (reuses lecturer template)."""
+    reports = get_my_reports(request.user.id)
+
+    # fallback/mock data
+    if not reports:
+        reports = [
+            {'name': 'Clubs Report', 'date': datetime.now().strftime('%Y-%m-%d'), 'size': '2.4 MB', 'type': 'clubs', 'url': '#'},
+            {'name': 'Students Report', 'date': datetime.now().strftime('%Y-%m-%d'), 'size': '1.8 MB', 'type': 'students', 'url': '#'},
+        ]
+
+    context = {
+        'saved_reports': reports,
+        'total_reports': len(reports),
+    }
+    return render(request, 'clubs/lecturer_saved_reports.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_or_lecturer)
+def export_all_data(request):
+     """Export all system data as CSV"""
+     from django.contrib.auth.models import User
+     
+     response = HttpResponse(content_type='text/csv')
+     response['Content-Disposition'] = f'attachment; filename="system_export_{datetime.now().strftime("%Y%m%d")}.csv"'
+     
+     writer = csv.writer(response)
+     
+     # Header
+     writer.writerow(['CLUB MANAGEMENT SYSTEM - COMPLETE DATA EXPORT'])
+     writer.writerow([f'Generated: {datetime.now().strftime("%B %d, %Y at %I:%M %p")}'])
+     writer.writerow([])
+     
+     # Export Clubs
+     writer.writerow(['=== CLUBS ==='])
+     writer.writerow(['Club Name', 'Description', 'Members Count', 'Events Count', 'Posts Count'])
+     clubs = Club.objects.annotate(
+         member_count=Count('members'),
+         event_count=Count('events'),
+         post_count=Count('posts')
+     )
+     for club in clubs:
+         writer.writerow([
+             club.name, 
+             club.description, 
+             club.member_count, 
+             club.event_count,
+             club.post_count
+         ])
+     
+     writer.writerow([])
+     
+     # Export Students
+     writer.writerow(['=== STUDENTS ==='])
+     writer.writerow(['Name', 'Email', 'Registration Number', 'Clubs Joined'])
+     students = User.objects.filter(profile__role='student').annotate(club_count=Count('clubs'))
+     for student in students:
+         reg_num = getattr(student.profile, 'registration_number', 'N/A')
+         writer.writerow([
+             student.profile.name,
+             student.email,
+             reg_num,
+             student.club_count
+         ])
+     
+     writer.writerow([])
+     
+     # Export Events
+     writer.writerow(['=== EVENTS ==='])
+     writer.writerow(['Title', 'Club', 'Date', 'Location', 'Attendees', 'Description'])
+     events = Event.objects.annotate(attendee_count=Count('attendees'))
+     for event in events:
+         title = getattr(event, 'title', None) or getattr(event, 'name', '')
+         location = getattr(event, 'location', '')
+         desc = getattr(event, 'description', '')
+         writer.writerow([
+             title,
+             event.club.name,
+             event.date.strftime('%Y-%m-%d'),
+             location,
+             event.attendee_count,
+             desc[:100] if desc else ''
+         ])
+     
+     writer.writerow([])
+     
+     # Export Polls
+     writer.writerow(['=== POLLS ==='])
+     writer.writerow(['Question', 'Club', 'Total Votes', 'Created Date'])
+     polls = Poll.objects.annotate(vote_count=Count('options__votes'))
+     for poll in polls:
+         writer.writerow([
+             poll.question,
+             poll.club.name,
+             poll.vote_count,
+             poll.created_at.strftime('%Y-%m-%d')
+         ])
+     
+     writer.writerow([])
+     
+     # Export Posts
+     writer.writerow(['=== POSTS ==='])
+     writer.writerow(['Title', 'Club', 'Author', 'Created Date', 'Content Preview'])
+     posts = ClubPost.objects.all().order_by('-created_at')
+     for post in posts:
+         content_preview = post.content[:100] + '...' if len(post.content) > 100 else post.content
+         writer.writerow([
+             post.title,
+             post.club.name,
+             post.author.profile.name,
+             post.created_at.strftime('%Y-%m-%d'),
+             content_preview
+         ])
+     
+     writer.writerow([])
+     writer.writerow(['=== END OF REPORT ==='])
+     
+     return response
+
+
+@login_required
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def admin_save_report_cloud(request):
+    """Admin: save a report stub to cloud (uses upload_to_supabase)."""
+    report_type = request.POST.get('report_type', 'clubs')
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"admin_{report_type}_report_{timestamp}.txt"
+
+    # Minimal report content (replace with real export data if available)
+    content = f"Admin {report_type} report\nGenerated by user {request.user.id} on {timestamp}\n\n"
+    content += "For full exports, call the dedicated export endpoints.\n"
+
+    result = upload_to_supabase(content, filename, request.user.id)
+
+    # Ensure consistent JSON response
+    if result.get('success'):
+        return JsonResponse({'success': True, 'url': result.get('url'), 'filename': filename})
+    else:
+        return JsonResponse({'success': False, 'error': result.get('error', 'upload failed')}, status=500)

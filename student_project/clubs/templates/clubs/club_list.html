@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,7 +36,7 @@
 
             <h3>{{ user.profile.name }}</h3>
 
-            <!-- FIXED LINE BELOW -->
+            <!-- ✅ FIXED: proper spacing around == and elif -->
             <p class="sidebar-role"
                {% if user.profile.role == 'admin' %}
                    style="color: #e74c3c;"
@@ -45,8 +46,7 @@
                    style="color: #27ae60;"
                {% else %}
                    style="color: #7f8c8d;"
-               {% endif %}
-            >
+               {% endif %}>
                 {{ user.profile.role|title }}
             </p>
         </div>
@@ -231,62 +231,62 @@
 </div>
 
 <script>
-function filterClubs() {
-    const input = document.getElementById('searchInput');
-    const filter = input.value.toLowerCase();
-    const cards = document.querySelectorAll('.club-card');
-    let visibleCount = 0;
+    function filterClubs() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const cards = document.querySelectorAll('.club-card');
+        let visibleCount = 0;
 
-    cards.forEach(card => {
-        const clubName = card.querySelector('.club-name').textContent.toLowerCase();
-        const clubDesc = card.querySelector('.club-description').textContent.toLowerCase();
+        cards.forEach(card => {
+            const clubName = card.querySelector('.club-name').textContent.toLowerCase();
+            const clubDesc = card.querySelector('.club-description').textContent.toLowerCase();
 
-        if (clubName.includes(filter) || clubDesc.includes(filter)) {
-            const activeBtn = document.querySelector('.filter-btn.active');
-            if (activeBtn) {
-                const currentFilter = activeBtn.textContent.toLowerCase();
-                const cardStatus = card.getAttribute('data-status');
-                if (currentFilter === 'all clubs' ||
-                    (currentFilter === 'my clubs' && cardStatus === 'joined') ||
-                    (currentFilter === 'available' && cardStatus === 'available')) {
+            if (clubName.includes(filter) || clubDesc.includes(filter)) {
+                const activeBtn = document.querySelector('.filter-btn.active');
+                if (activeBtn) {
+                    const currentFilter = activeBtn.textContent.toLowerCase();
+                    const cardStatus = card.getAttribute('data-status');
+                    if (currentFilter === 'all clubs' ||
+                        (currentFilter === 'my clubs' && cardStatus === 'joined') ||
+                        (currentFilter === 'available' && cardStatus === 'available')) {
+                        card.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                } else {
                     card.style.display = 'block';
                     visibleCount++;
-                } else {
-                    card.style.display = 'none';
                 }
             } else {
+                card.style.display = 'none';
+            }
+        });
+
+        document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function filterByStatus(status) {
+        const cards = document.querySelectorAll('.club-card');
+        const buttons = document.querySelectorAll('.filter-btn');
+        let visibleCount = 0;
+
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        cards.forEach(card => {
+            const cardStatus = card.getAttribute('data-status');
+            if (status === 'all' || cardStatus === status) {
                 card.style.display = 'block';
                 visibleCount++;
+            } else {
+                card.style.display = 'none';
             }
-        } else {
-            card.style.display = 'none';
-        }
-    });
+        });
 
-    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
-}
-
-function filterByStatus(status) {
-    const cards = document.querySelectorAll('.club-card');
-    const buttons = document.querySelectorAll('.filter-btn');
-    let visibleCount = 0;
-
-    buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    cards.forEach(card => {
-        const cardStatus = card.getAttribute('data-status');
-        if (status === 'all' || cardStatus === status) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
-    document.getElementById('searchInput').value = '';
-}
+        document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        document.getElementById('searchInput').value = '';
+    }
 </script>
 </body>
 </html>
