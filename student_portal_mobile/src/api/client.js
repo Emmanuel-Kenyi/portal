@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Change this to your Render URL when deploying
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://student-project-5d6h.onrender.com/api';
+
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
