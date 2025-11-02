@@ -28,4 +28,5 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),  # Optional built-in auth
     path('clubs/', include('clubs.urls')),  # Club app URLs
     path('users/', include('users.urls')),  # Login/signup/dashboard URLs
+    path('api/', include('api.urls')),  # API endpoints
 ]
