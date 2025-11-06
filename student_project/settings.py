@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from decouple import config
 import dj_database_url
+from datetime import timedelta
 
 # -----------------------------
 # BASE DIRECTORY
@@ -16,18 +17,10 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 # -----------------------------
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-placeholder')
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)  # Set to True for development
 
-# ALLOWED_HOSTS - Use Render's automatic hostname or environment variable
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, '127.0.0.1', 'localhost']
-else:
-    # Fallback to config or default
-    ALLOWED_HOSTS = [h.strip() for h in config(
-        'ALLOWED_HOSTS',
-        default='127.0.0.1,localhost'
-    ).split(',')]
+# ALLOWED_HOSTS - Allow mobile app connections
+ALLOWED_HOSTS = ['*']  # Allow all hosts for development
 
 # -----------------------------
 # SUPABASE
@@ -46,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',  # For mobile app CORS
     'clubs',
     'users',
     'api',
@@ -53,11 +47,41 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
 ]
 
+# -----------------------------
+# REST FRAMEWORK
+# -----------------------------
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
+
+# -----------------------------
+# JWT SETTINGS
+# -----------------------------
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
+
+# -----------------------------
+# CORS SETTINGS (for mobile app)
+# -----------------------------
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_CREDENTIALS = True
 
 # -----------------------------
 # MIDDLEWARE
@@ -65,6 +89,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # BEFORE CommonMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
