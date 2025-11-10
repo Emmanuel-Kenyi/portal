@@ -1,7 +1,7 @@
 // api.ts
 import { Alert } from "react-native";
 
-export const API_BASE = "http://192.168.134.98:8000/api"; // ⚠️ Replace with your system’s IP shown by `ipconfig`
+export const API_BASE = "http://192.168.241.98:8000/api"; // ⚠️ Replace with your system’s IP shown by `ipconfig`
 
 // ----------------------------
 // 🔧 Error Parser

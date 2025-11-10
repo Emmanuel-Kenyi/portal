@@ -35,22 +35,30 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    // ✅ Change endpoint to "token/"
-    const data = await apiPost<{ username: string; password: string }, LoginResponse>(
-      "token/",
-      { username, password }
-    );
+    try {
+      const data = await apiPost<{ username: string; password: string }, LoginResponse>(
+        "token/",
+        { username, password }
+      );
 
-    setLoading(false);
-
-    if (data) {
-      await login({
-        token: data.access,
-        refresh: data.refresh,
-        role: data.role,
-        username: data.username,
-        id: data.user_id,
-      });
+      if (data) {
+        await login({
+          token: data.access,
+          refresh: data.refresh,
+          role: data.role,
+          username: data.username,
+          id: data.user_id,
+        });
+      } else {
+        // apiPost already showed an Alert, just log for debugging
+        console.log("Login failed - no data returned");
+      }
+    } catch (error) {
+      console.error("Unexpected login error:", error);
+      Alert.alert("Error", "An unexpected error occurred");
+    } finally {
+      // ✅ This ensures loading stops no matter what
+      setLoading(false);
     }
   };
 
@@ -68,6 +76,7 @@ export default function LoginScreen() {
           onChangeText={setUsername}
           style={styles.input}
           editable={!loading}
+          autoCapitalize="none"
         />
         <TextInput
           placeholder="Password"
